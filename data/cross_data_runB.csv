@@ -1,0 +1,18 @@
+﻿cross_id,strainA,strainB,moi,timepoint,incubation_temp,trypsin,infection_plate,Comment
+10,Control,Parentals,10,0,0,0,0,1/2 plate
+1,SI86,HK68,10,12,4,N,3,
+2,HK68,PAN99,10,12,4,N,2,
+3,Chile83,PAN99,10,12,4,N,2,
+4,Chile83,HK68,10,12,4,N,2,
+8,CA09,PAN99,10,12,4,N,1,1/4 plate
+9,SI86,Chile83,10,12,4,N,3,1/2 plate
+21,CA09,SI86,10,12,4,N,1,
+24,SI86,HK68,10,12,4,N,2,
+25,PAN99,SI86,10,12,4,N,1,
+19,SI86,HK68,10,12,37,N,4,
+22,SI86,Chile83,10,12,37,N,4,
+7,SI86,Chile83,10,12,4,Y,5,3/4 plate
+23,SI86,HK68,10,12,4,Y,5,
+6,SI86,HK68,10,24,4,Y,6,
+5,SI86,Chile83,10,36,4,Y,7,
+20,SI86,HK68,10,36,4,Y,7,

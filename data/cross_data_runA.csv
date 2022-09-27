@@ -1,0 +1,21 @@
+﻿cross_id,strainA,strainB,moi,timepoint,incubation_temp,trypsin,infection_plate,run_id,same_subtype,subtype,category,subcategory,plaque_purified
+1,HK68,TX12,10,12,4,N,,A,Y,H3N2,Experimental,Pairwise,N
+2,CA09,HK68,10,12,4,N,,A,N,H3N2/H1NI,Experimental,Pairwise,N
+3,HK68,PAN99,10,12,4,N,,A,Y,H3N2,Experimental,Pairwise,N
+4,CA09,HK68,10,12,4,N,,A,N,H3N2/H1NI,Control,Replicate of Standard,N
+5,HK68,PAN99,10,12,4,N,,A,Y,H3N2,Control,Replicate of Standard,N
+6,CA09,HK68,1,12,4,N,,A,N,H3N2/H1NI,Control,Intermediate MOI,N
+7,PAN99,TX12,10,12,4,N,,A,Y,H3N2,Experimental,Pairwise,N
+8,HK68,SI86,10,12,4,N,,A,N,H3N2/H1NI,Experimental,Pairwise,N
+9,Chile83,HK68,10,12,4,N,,A,N,H3N2/H1NI,Experimental,Pairwise,N
+10,CA09,HK68,0.01,12,4,N,,A,N,H3N2/H1NI,Control,Low MOI,N
+11,CA09,PAN99,10,12,4,N,,A,N,H3N2/H1NI,Experimental,Pairwise,N
+12,Chile83,SI86,10,12,4,N,,A,Y,H1N1,Experimental,Pairwise,N
+13,CA09,PAN99,10,12,4,N,,A,N,H3N2/H1NI,Control,Replicate of Standard,N
+14,CA09,TX12,10,12,4,N,,A,N,H3N2/H1NI,Experimental,Pairwise,N
+15,PAN99,SI86,10,12,4,N,,A,N,H3N2/H1NI,Experimental,Pairwise,N
+16,Chile83,PAN99,10,12,4,N,,A,N,H3N2/H1NI,Experimental,Pairwise,N
+17,CA09,PAN99,10,12,4,N,,A,N,H3N2/H1NI,Control,Replicate of Standard,N
+18,CA09,SI86,10,12,4,N,,A,Y,H1N1,Experimental,Pairwise,N
+19,SI86,TX12,10,12,4,N,,A,N,H3N2/H1NI,Experimental,Pairwise,N
+20,Chile83,TX12,10,12,4,N,,A,N,H3N2/H1NI,Experimental,Pairwise,N

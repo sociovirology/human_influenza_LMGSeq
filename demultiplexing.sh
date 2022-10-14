@@ -51,8 +51,8 @@ cat $2 | grep -f - ~/GbBSeq_human_IAV/shared/barcodes5.fasta -A1 -w --no-group-s
 cat $2 | grep -f - ~/GbBSeq_human_IAV/shared/barcodes5rev.fasta -A1 -w --no-group-separator > $INTERMED_DIR/barcodes5rev.fasta
 
 #Now, copy entire files for 3' barcodes because we want all samples 
-cp ~/GbBSeq_human_IAV/shared/barcodes3.fasta $INTERMED_DIR/barcodes3.fasta
-cp ~/GbBSeq_human_IAV/shared/barcodes3rev.fasta $INTERMED_DIR/barcodes3rev.fasta
+cp $BASEDIR/shared/barcodes3.fasta $INTERMED_DIR/barcodes3.fasta
+cp $BASEDIR/shared/barcodes3rev.fasta $INTERMED_DIR/barcodes3rev.fasta
 
 #START HERE OCT 13, 2022: Need to:
 #1. Check needed files in shared/
@@ -63,7 +63,7 @@ cd $INTERMED_DIR
 
 #First, I'll note that the barcode files have been generated.
 #Now will demultiplex cross and samples.
-cutadapt -g file:barcodes5.fasta -G file:barcodes3rev.fasta -j 0 -O 8 --no-indels --action=none --discard-untrimmed -o trimmed_{name1}_{name2}_$1_R1.fastq -p trimmed_{name1}_{name2}_$1_R2.fastq ~/GbBSeq_human_IAV/data/$1_R1.fastq ~/GbBSeq_human_IAV/data/$1_R2.fastq > cutadapt_demultiplexing_report.txt
+cutadapt -g file:barcodes5.fasta -G file:barcodes3rev.fasta -j 0 -O 8 --no-indels --action=none --discard-untrimmed -o trimmed_{name1}_{name2}_$1_R1.fastq -p trimmed_{name1}_{name2}_$1_R2.fastq data/$1_R1.fastq data/$1_R2.fastq > cutadapt_demultiplexing_report.txt
 
 #Checking on the success of this step
 head -n 25 cutadapt_demultiplexing_report.txt
@@ -113,7 +113,7 @@ do
   prefix=${file%_R1.fastq} #Get file prefix
   cross_sample=${prefix#uni13_} #Get cross sample combination
   
-  cutadapt -g file:/home/sldmunoz/GbBSeq_human_IAV/shared/segment_specific_primers.fasta -A file:/home/sldmunoz/GbBSeq_human_IAV/shared/segment_specific_primers_rev.fasta -e 0.0 -O 10 --no-indels -o ${cross_sample}_{name}_R1.fastq -p ${cross_sample}_{name}_R2.fastq ${prefix}_R1.fastq ${prefix}_R2.fastq > cutadapt_${cross_sample}_primer_demultiplexing.txt
+  cutadapt -g file:$BASEDIR/shared/segment_specific_primers.fasta -A file:$BASEDIR/shared/segment_specific_primers_rev.fasta -e 0.0 -O 10 --no-indels -o ${cross_sample}_{name}_R1.fastq -p ${cross_sample}_{name}_R2.fastq ${prefix}_R1.fastq ${prefix}_R2.fastq > cutadapt_${cross_sample}_primer_demultiplexing.txt
 
 done
 

@@ -27,11 +27,11 @@ echo $2
 echo $3
 
 #Download FASTQ sequencing files from SRA (Illumnia PE read files)
-wget https://sra-download.be-md.ncbi.nlm.nih.gov/vast/sra01/SRZ/021880/SRR21880043/GBSPCR2b_S1_L001_R1_001.fastq.gz -O data/runA_R1.fastq.gz
-wget https://sra-download.be-md.ncbi.nlm.nih.gov/vast/sra01/SRZ/021880/SRR21880043/GBSPCR2b_S1_L001_R2_001.fastq.gz -O data/runA_R2.fastq.gz
+#wget https://sra-download.be-md.ncbi.nlm.nih.gov/vast/sra01/SRZ/021880/SRR21880043/GBSPCR2b_S1_L001_R1_001.fastq.gz -O data/runA_R1.fastq.gz
+#wget https://sra-download.be-md.ncbi.nlm.nih.gov/vast/sra01/SRZ/021880/SRR21880043/GBSPCR2b_S1_L001_R2_001.fastq.gz -O data/runA_R2.fastq.gz
 
 #Unzip files
-gunzip data/runA_*.fastq.gz
+#gunzip data/runA_*.fastq.gz
 
 #This script conducts demultiplexing for one run, which is indicated in the first command-line argument: runA,
 # the second command line argument includes a cross list (in this case detailing the experimental coinfections),
@@ -46,9 +46,9 @@ INTERMED_DIR=mkdir "$1""_""$3"
 mkdir $INTERMED_DIR
 
 ## First Copy Barcodes only for relevant crosses 
-cat $2 | grep -f - ~/GbBSeq_human_IAV/shared/barcodes5.fasta -A1 -w --no-group-separator > $INTERMED_DIR/barcodes5.fasta
+cat $2 | grep -f - $BASEDIR/shared/barcodes5.fasta -A1 -w --no-group-separator > $INTERMED_DIR/barcodes5.fasta
 #Repeat with reverse barcodes
-cat $2 | grep -f - ~/GbBSeq_human_IAV/shared/barcodes5rev.fasta -A1 -w --no-group-separator > $INTERMED_DIR/barcodes5rev.fasta
+cat $2 | grep -f - $BASEDIR/shared/barcodes5rev.fasta -A1 -w --no-group-separator > $INTERMED_DIR/barcodes5rev.fasta
 
 #Now, copy entire files for 3' barcodes because we want all samples 
 cp $BASEDIR/shared/barcodes3.fasta $INTERMED_DIR/barcodes3.fasta
@@ -63,7 +63,7 @@ cd $INTERMED_DIR
 
 #First, I'll note that the barcode files have been generated.
 #Now will demultiplex cross and samples.
-cutadapt -g file:barcodes5.fasta -G file:barcodes3rev.fasta -j 0 -O 8 --no-indels --action=none --discard-untrimmed -o trimmed_{name1}_{name2}_$1_R1.fastq -p trimmed_{name1}_{name2}_$1_R2.fastq data/$1_R1.fastq data/$1_R2.fastq > cutadapt_demultiplexing_report.txt
+cutadapt -g file:barcodes5.fasta -G file:barcodes3rev.fasta -j 0 -O 8 --no-indels --action=none --discard-untrimmed -o trimmed_{name1}_{name2}_$1_R1.fastq -p trimmed_{name1}_{name2}_$1_R2.fastq ~/GbBSeq_human_IAV/data/$1_R1.fastq ~/GbBSeq_human_IAV/data/$1_R2.fastq > cutadapt_demultiplexing_report.txt
 
 #Checking on the success of this step
 head -n 25 cutadapt_demultiplexing_report.txt

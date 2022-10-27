@@ -26,12 +26,12 @@ echo $1
 echo $2
 echo $3
 
-#Download FASTQ sequencing files from SRA (Illumnia PE read files)
-#wget https://sra-download.be-md.ncbi.nlm.nih.gov/vast/sra01/SRZ/021880/SRR21880043/GBSPCR2b_S1_L001_R1_001.fastq.gz -O data/runA_R1.fastq.gz
-#wget https://sra-download.be-md.ncbi.nlm.nih.gov/vast/sra01/SRZ/021880/SRR21880043/GBSPCR2b_S1_L001_R2_001.fastq.gz -O data/runA_R2.fastq.gz
+#Download FASTQ sequencing files from SRA via EBIS (Illumnia PE read files)
+wget ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR218/043/SRR21880043/SRR21880043_1.fastq.gz -O data/runA_R1.fastq.gz
+wget ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR218/043/SRR21880043/SRR21880043_2.fastq.gz -O data/runA_R2.fastq.gz
 
 #Unzip files
-#gunzip data/runA_*.fastq.gz
+gunzip data/runA_*.fastq.gz
 
 #This script conducts demultiplexing for one run, which is indicated in the first command-line argument: runA,
 # the second command line argument includes a cross list (in this case detailing the experimental coinfections),
@@ -53,10 +53,6 @@ cat $2 | grep -f - $BASEDIR/shared/barcodes5rev.fasta -A1 -w --no-group-separato
 #Now, copy entire files for 3' barcodes because we want all samples 
 cp $BASEDIR/shared/barcodes3.fasta $INTERMED_DIR/barcodes3.fasta
 cp $BASEDIR/shared/barcodes3rev.fasta $INTERMED_DIR/barcodes3rev.fasta
-
-#START HERE OCT 13, 2022: Need to:
-#1. Check needed files in shared/
-#2. Check output directory, if any?? Because output comes from amplicon curation, right?
 
 #Change into Run directory
 cd $INTERMED_DIR

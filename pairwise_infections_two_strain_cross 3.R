@@ -1,13 +1,25 @@
-################ Culture coinfection analyses ################
-#### 1. Data Sources and Preparing Data
-#### 2. 
+#************* Pairwise coinfection analyses *************#
+#### 1. Importing Data and Initial Preparation of Data Frame
+#### 2. Antigenic Segment Processing
 #### 3. Coinfection Supernatant Titers
 #### 4. Population Genetic Statistics
 #### 5. Testing Strain Specificity
 
+# Pairwise coinfection analyses Script for Influenza GbBSeq
+# Script: pairwise_coinfections.R
+# This file is an R script that analyzes strain assignment data from a GbBSeq experiment
+# Requires running demultiplexing.sh and amplicon_curation_strain_assignment.sh to generate output files for *pairwise coinfections*:
+#   ./demultiplexing.sh runA "shared/cross_list_runA_pairwise.txt" pairwise_infections
+#   ./amplicon_curation_strain_assignment.sh runA "shared/cross_list_runA_pairwise.txt" pairwise_infections
+
+#This script is part of the following manuscript:
+#Influenza A virus reassortment is strain dependent
+#Kishana Y. Taylor | Ilechukwu Agu  | Ivy José | Sari Mäntynen | A.J. Campbell | Courtney Mattson |  Tsui-wen Chou | Bin Zhou | David Gresham | Elodie Ghedin |  Samuel L. Díaz Muñoz
+
+
 #AFTER SENDING DRAFT - Search for this below
 
-#Load libraries
+#Load required libraries
 library(dplyr)
 library(ggplot2)
 library(tidyr)
@@ -16,16 +28,12 @@ library(readr)
 library(gridExtra)
 library(ggthemes)
 
-#### 1. Data Sources and Preparing Data ####
+# 1. Importing Data and Initial Preparation of Data Frame ----
 
-#Borrow tick from strain assignment function I developed.
-
-#Read files
+#List output file names
 file_names <- list.files("outputs/pairwise_infections", "*_strain_database17_98_locus.txt", full.names = T)
-#file_names <- file_names[c(3,4)]
 
-#Going to add 
-
+#Make a dataframe by recursively reading each output file in the list
 two_strain_database17_98_locus <- NULL
 for (file in file_names) {
   df <- read.table(file, quote="\"", comment.char="")
@@ -35,17 +43,17 @@ for (file in file_names) {
 #Assign names to columns
 colnames(two_strain_database17_98_locus) <- c("cross_sample_locus", "total_reads", "majority_assigned_reads", "majority_strain_locus")
 
-#Calculate Proportions
+#Calculate Proportion of Reads that were assigned to one strain in the coinfection or the other
 two_strain_database17_98_locus <- mutate(two_strain_database17_98_locus, proportion_assigned = majority_assigned_reads/total_reads)
 
-#Quick quality control plot
+#Quick quality control plot looking at relationship between total number of reads and proportion assigned to one strain 
 qplot(two_strain_database17_98_locus$proportion_assigned, two_strain_database17_98_locus$total_reads)
 
+#Cleaning up text from output files 
 cross_sample_locus <- gsub("usearch/all/","", two_strain_database17_98_locus$cross_sample_locus)
-
 two_strain_database17_98_locus$cross_sample_locus <- gsub("_98_merged.b6","", cross_sample_locus)
 
-#Then split cross sample locus
+#Then split cross sample locus into different columns, but keep original
 two_strain_database17_98_locus <- separate(two_strain_database17_98_locus, cross_sample_locus, c("cross", "sample", "locus"), sep = "_", remove=FALSE)
 
 #Now create a cross_sample column to identify unique samples more easily
@@ -61,16 +69,16 @@ nrow(two_strain_database17_98_locus)
 #Let's try our first plot
 ggplot(two_strain_database17_98_locus, aes(x = locus, y = sample)) + geom_point(aes(col=majority_strain, alpha=proportion_assigned), shape=15, size = 6) + theme(axis.text.x = element_text(angle=90)) + facet_wrap(~ cross)
 
+#Note that this plot has two loci for HA and two for NA. This will be corrected below to assign proper HA and NA strain calls
 no_subtype_processing_plot <- ggplot(two_strain_database17_98_locus, aes(x = locus, y = sample)) + geom_point(aes(col=majority_strain, alpha=proportion_assigned), shape=15, size = 6) + theme(axis.text.x = element_text(angle=90)) + facet_wrap(~ cross)
 
-
-#Okay, now add the information on what each cross is about
+#Okay, now add the information on what each cross (experimental coinfection) is about. This data sheet is included in the repo. 
 cross_data_runA <- read.csv("~/Dropbox/mixtup/Documentos/ucdavis/papers/influenza_GbBSeq_human/influenza_GbBSeq/data/cross_data_runA.csv")
 
 #Prepare the cross_data_runA df for a merge with the big data set, so we can plot based on infection conditions
 cross_data_runA <- mutate(cross_data_runA, cross = paste("cross", cross_id, sep = ""))
 
-#Make a strain combination column for more convenient facetting
+#Make a strain combination column for more convenient facetting, note that order will be strainA_strainB
 cross_data_runA <- mutate(cross_data_runA, strainAB = paste(strainA, strainB, sep = "_"))
 
 #Join sample information
@@ -97,7 +105,7 @@ two_strain_database17_98_locus %>% group_by(strainAB) %>%
 #9 PAN99_TX12           1,544,278
 #10 SI86_TX12           221,086
 
-#Summarise average number of reads per sample in each cross 
+#Summarize average number of reads per sample in each cross 
 reads_sample <- two_strain_database17_98_locus %>% group_by(cross_sample, cross) %>%
   summarise(
     total_cross_reads = sum(total_reads),
@@ -114,8 +122,16 @@ two_strain_database17_98_locus %>% group_by(strainAB, locus) %>%
     average_locus_reads = mean(total_reads),
   )
 
-#################### New Antigenic Segment Processing - Refer ha_na.Rmd ####################
-#Total Rows in DF
+# 2. Antigenic Segment Processing ----
+# This section uses information from each of two PCR loci (HA3a, HA1b, NA1c, NA3a) for each antigenic segment (HA and NA)
+ # to decide which strain to assign to that given segment in each progeny isolate clone (sample).
+ # Aside from using read data, we also used information from control GbBSeq runs (including a single strain)
+
+
+#START HERE Oct 28, 2022
+
+
+#Total Rows in data frame
 nrow(two_strain_database17_98_locus)
 #[1] 7538
 
@@ -131,7 +147,7 @@ View(locus_by_cross[grep("NA", locus_by_cross$locus), ])
 #HA's
 View(locus_by_cross[grep("HA", locus_by_cross$locus), ])
 
-##### First NA #####
+## 2.1 NA Segment  ----
 #Lets check how many samples have any NA segments
 nrow(two_strain_database17_98_locus[grep("NA", two_strain_database17_98_locus$locus), ])
 #[1] 1300

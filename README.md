@@ -13,6 +13,8 @@ If you are reading or using this, let us know how these data were useful for you
 3. chmod +x demultiplexing_GbBSeq6.sh
 4. ./demultiplexing_GbBSeq6.sh runA "shared/cross_list_runA_pairwise.txt" pairwise_infections (pairwise)
 5. ./demultiplexing_infection_conditions.sh (controls)
+6. chmod +x amplicon_curation_strain_assignment.sh
+6. ./amplicon_curation_strain_assignment.sh runA "shared/cross_list_runA_pairwise.txt" pairwise_infections
 6. Rscript aiv_detection_environment_analysis.R (or load interactively in R)
 7. Rscript aiv_detection_environment_analysis.R (or load interactively in R)
 

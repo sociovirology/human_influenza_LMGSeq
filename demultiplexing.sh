@@ -13,7 +13,7 @@
 #Verify we have 3 arguments
 
 if [ "$#" -ne 3 ]; then
-    echo "You must enter exactly 3 command line arguments: run, cross, and experiment"
+    echo "You must enter exactly 3 command line arguments: run, cross list, and experiment"
     echo "run has format 'runA'"
     echo "File name for cross list. Cross list file is just a plain text file one line per cross: cross1 [break] cross9 etc. "
     echo "Experiment can be any folder name you desire, e.g. 'infection_conditions'"
@@ -21,12 +21,12 @@ if [ "$#" -ne 3 ]; then
 fi
 
 #Checking command line parameters:
-echo "Checking command line arguments: run, cross, and experiment"
+echo "Checking command line arguments: run, cross list, and experiment"
 echo $1
 echo $2
 echo $3
 
-#Download FASTQ sequencing files from SRA via EBIS (Illumnia PE read files)
+#Download FASTQ sequencing files from SRA via EBI (Illumnia PE read files)
 wget ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR218/043/SRR21880043/SRR21880043_1.fastq.gz -O data/runA_R1.fastq.gz
 wget ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR218/043/SRR21880043/SRR21880043_2.fastq.gz -O data/runA_R2.fastq.gz
 
@@ -42,7 +42,7 @@ BASEDIR=$(dirname "$0")
 cd $BASEDIR
 
 #Make a directory to hold all the intermediate files etc.
-INTERMED_DIR=mkdir "$1""_""$3"
+INTERMED_DIR="$1""_""$3"
 mkdir $INTERMED_DIR
 
 ## First Copy Barcodes only for relevant crosses 
@@ -59,7 +59,7 @@ cd $INTERMED_DIR
 
 #First, I'll note that the barcode files have been generated.
 #Now will demultiplex cross and samples.
-cutadapt -g file:barcodes5.fasta -G file:barcodes3rev.fasta -j 0 -O 8 --no-indels --action=none --discard-untrimmed -o trimmed_{name1}_{name2}_$1_R1.fastq -p trimmed_{name1}_{name2}_$1_R2.fastq ~/GbBSeq_human_IAV/data/$1_R1.fastq ~/GbBSeq_human_IAV/data/$1_R2.fastq > cutadapt_demultiplexing_report.txt
+cutadapt -g file:barcodes5.fasta -G file:barcodes3rev.fasta -O 8 --no-indels --action=none --discard-untrimmed -o trimmed_{name1}_{name2}_$1_R1.fastq -p trimmed_{name1}_{name2}_$1_R2.fastq ~/GbBSeq_human_IAV/data/$1_R1.fastq ~/GbBSeq_human_IAV/data/$1_R2.fastq > cutadapt_demultiplexing_report.txt
 
 #Checking on the success of this step
 head -n 25 cutadapt_demultiplexing_report.txt

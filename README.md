@@ -1,4 +1,4 @@
-# Genotype by Barcode Sequencing (GbBSeq) applied to high-throughput quantification of genetic exchange among diverse human Influenza A virus strains 
+# Linked Multilocus Genotype by Sequencing (LMGSeq) applied to high-throughput quantification of genetic exchange among diverse human Influenza A virus strains 
 
 This github repository includes code (and links to data) from the manuscript:  
 Influenza A virus reassortment is strain dependent

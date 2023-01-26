@@ -1,0 +1,516 @@
+title: "Genotyping of Pairwise Influenza Co-infection Progeny by GbBSeq"
+output: html_notebook
+---
+
+# Reassortment in Co-Circulating Clinical Isolates 
+This coding notebook is part of the following manuscript:
+High frequency of reassortment among diverse influenza viruses revealed by high-throughput experimental coinfection
+Samuel L. Díaz Muñoz | Kishana Y. Taylor | Ilechukwu Agu | Ivy José | Sari Mäntynen | Mirella Salvatore | Tsui-wen Chou | Timothy Song | Bin Zhou | David Gresham | Elodie Ghedin
+
+This coding notebook conducts analyses on experiments to conduct control infections to test the GbBSeq approach.
+
+```{bash}
+ssh sldmunoz@crick.cse.ucdavis.edu
+srun -t12:00:00 -c6 --mem=30000 --threads=6 --pty /bin/bash
+source activate gbbseq-env
+module load usearch/8.1.1861
+
+#Root will be ~/GbBSeq_human_IAV folder on Crick, but this will be the root of the repo influenza_GbBSeq 
+cd ~/GbBSeq_human_IAV
+```
+
+## Experiments
+We conducted two pairwise crosses between a total of three strains that were isolated from clinical swabs in MDCK cells:
+1. H3N2-NYU-19 x H3N2-NYU-23  
+  -Run C, Cross 11
+  -Full plate
+
+2. H3N2-NYU-23 x H3N2-NYU-26  
+  -Run D, Cross 10
+  -23 plaques
+  
+3. H3N2-NYU-19 x H3N2-NYU-26  
+  -Run D, Cross 12
+  -24 plaques
+
+NOTE: Sequences are identical at some loci:
+All three strains: HA3a, PAc 
+H3N2-NYU-19 and H3N2-NYU-23: NA3a, NPd, PB1c, PB2f
+H3N2-NYU-23 and H3N2-NYU-26: NS1d
+
+So:
+For H3N2-NYU-23 and H3N2-NYU-26 I need to exclude HA3a, PAc, NS1d
+For H3N2-NYU-19 and H3N2-NYU-23 I need to exclude HA3a, PAc, NA3a, NPd, PB1c, PB2f (so only Mg and NS1d)
+For H3N2-NYU-19 and H3N2-NYU-26: HA3a, PAc
+
+## Analysis of Sequence Data
+
+### Demultiplexing 
+First need to select the correct strains to demultiplex the data. Here I have a couple of runs and don't have full plates so need to potentially do in steps
+
+First let's do run demultiplexing
+
+```{bash}
+BASEDIR=$(dirname "$0")
+cd $BASEDIR
+#BASEDIR=/home/sldmunoz/GbBSeq_human_IAV
+#cd $BASEDIR
+
+#1=runC
+#2=cross11
+#3=clinical
+
+
+#Make a directory to hold all the intermediate files etc.
+INTERMED_DIR="runC""_""clinical"
+mkdir $INTERMED_DIR
+
+
+## First Copy Barcodes only for relevant crosses 
+echo cross11 | grep -f - $BASEDIR/shared/barcodes5.fasta -A1 -w --no-group-separator > $INTERMED_DIR/barcodes5.fasta
+#Repeat with reverse barcodes
+echo cross11 | grep -f - $BASEDIR/shared/barcodes5rev.fasta -A1 -w --no-group-separator > $INTERMED_DIR/barcodes5rev.fasta
+
+#Now, copy entire files for 3' barcodes because we want all samples 
+cp $BASEDIR/shared/barcodes3.fasta $INTERMED_DIR/barcodes3.fasta
+cp $BASEDIR/shared/barcodes3rev.fasta $INTERMED_DIR/barcodes3rev.fasta
+
+#Change into Run directory
+cd $INTERMED_DIR
+
+#First, I'll note that the barcode files have been generated.
+#Now will demultiplex cross and samples.
+cutadapt -g file:barcodes5.fasta -G file:barcodes3rev.fasta -O 8 --no-indels --action=none --discard-untrimmed -o trimmed_{name1}_{name2}_runC_R1.fastq -p trimmed_{name1}_{name2}_runC_R2.fastq ~/GbBSeq_human_IAV/data/runC_R1.fastq ~/GbBSeq_human_IAV/data/runC_R2.fastq > cutadapt_demultiplexing_report.txt
+
+#Checking on the success of this step
+head -n 25 cutadapt_demultiplexing_report.txt
+
+#Now let's trim those barcodes.
+
+for file in trimmed_cross11_sample*_runC_R1.fastq;
+do
+    prefix=${file%_runC_R1.fastq} #Get file prefix
+    cross_sample=${prefix#trimmed_} #Get cross sample combination
+    cross=${cross_sample%_sample*}
+    sample=${cross_sample#cross*_}
+    echo "$file"
+    echo "$prefix"
+    echo "$cross_sample"
+    echo "$cross"
+    echo "$sample"
+
+    barcode5=$(grep ${cross} -A1 -w --no-group-separator barcodes5.fasta | grep -v ${cross})
+    barcode5rev=$(grep ${cross} -A1 -w --no-group-separator barcodes5rev.fasta | grep -v ${cross})
+    barcode3=$(grep ${sample} -A1 -w --no-group-separator barcodes3.fasta | grep -v ${sample})
+    barcode3rev=$(grep ${sample} -A1 -w --no-group-separator barcodes3rev.fasta | grep -v ${sample})
+
+#Trimming barcodes noted above from entire run sequencingfile
+    cutadapt -a ${barcode5}...${barcode3} -A ${barcode3rev}...${barcode5rev} -O 8 -o ${cross}_${sample}_R1.fastq -p ${cross}_${sample}_R2.fastq trimmed_${cross}_${sample}_runC_R1.fastq trimmed_${cross}_${sample}_runC_R2.fastq >> cutadapt_amplicon_trimming.txt
+done
+
+#Check on status
+grep "Total written (filtered):" cutadapt_amplicon_trimming.txt
+#Hmmmm in 50's to 70's
+
+#Now we will trim the uni13 primer on all samples
+for file in cross*_sample*_R1.fastq;
+do
+  prefix=${file%_R1.fastq} #Get file prefix
+  cutadapt -a "CCTTGTTTCTACT" -G "^AGTAGAAACAAGG" -o uni13_${prefix}_R1.fastq -p uni13_${prefix}_R2.fastq ${prefix}_R1.fastq ${prefix}_R2.fastq  > cutadapt_${prefix}_uni13_trimming.txt
+done
+
+grep "Total written (filtered):" *uni13_trimming.txt
+#All in the 90's pretty much
+
+
+#Now we move to primer demultiplexing by locus:
+
+for file in uni13_cross*_sample*_R1.fastq;
+do
+  prefix=${file%_R1.fastq} #Get file prefix
+  cross_sample=${prefix#uni13_} #Get cross sample combination
+  
+  cutadapt -g file:$BASEDIR/shared/segment_specific_primers.fasta -A file:$BASEDIR/shared/segment_specific_primers_rev.fasta -e 0.0 -O 10 --no-indels -o ${cross_sample}_{name}_R1.fastq -p ${cross_sample}_{name}_R2.fastq ${prefix}_R1.fastq ${prefix}_R2.fastq > cutadapt_${cross_sample}_primer_demultiplexing.txt
+
+done
+
+#Check
+grep "Total written (filtered):" *_primer_demultiplexing.txt
+#Most all in the 90's
+
+echo "Demultiplexing done!"
+```
+
+Make cross list
+
+```{bash}
+cd $BASEDIR/$INTERMED_DIR
+printf "cross11\n" > cross_list.txt
+```
+
+
+```{bash}
+#Change into folder that has amplicons that requires processing. This folder will be generated by demultiplexing script
+cd $BASEDIR/$INTERMED_DIR
+pwd
+
+
+#Initial loop to target only the crosses we need
+for cross in `cat cross_list.txt`;
+do
+  echo "Making a directory for $cross"
+  mkdir ${cross}/
+  
+  cross_number=${cross#cross}
+  echo "$cross_number"
+  echo "Making custom database for $cross"
+  echo "Strains picked:"
+  printf "H3N2-NYU-23\nH3N2-NYU-19\n"
+  
+  printf "H3N2-NYU-23\nH3N2-NYU-19\n" | grep -f - ../shared/reference_database_clinical.fasta -A1 --no-group-separator > ${cross}/${cross}_reference_database_clinical.fasta
+
+  #Now need to do locus aware PEAR merge on all samples in this directory
+  for file in ${cross}_sample*_*_R1.fastq;
+  do
+    prefix=${file%_R1.fastq} #Get file prefix
+    echo "Now on file $file"
+    echo "$prefix"
+    #Merge reads
+    pear -f ${prefix}_R1.fastq -r ${prefix}_R2.fastq -o ${cross}/${prefix}_merged.fastq -v 3
+  done
+done
+
+echo "Custom Databases for each cross done. PEAR R1 and R2 merging done"
+echo "Now moving to matching amplicons to our custom databases with usearch, and then tallying matches to asign strains"
+
+#Now do the usearch'ing - HERE AS OF NOV 19, 2021 3:20pm
+
+cd $BASEDIR/$INTERMED_DIR
+
+for cross in `cat cross_list.txt`;
+do
+#Move into correct directory for cross
+cd $BASEDIR/$INTERMED_DIR
+
+#Make directory to hold results
+mkdir ${cross}/usearch
+mkdir ${cross}/usearch/all
+
+#move into cross directory
+cd ${cross}/
+echo "Going into $cross folder"
+pwd
+
+#Now lookup reads on custom database for each cross (note the loop is going over *all* *.b6 files).
+for file1 in cross*_sample*_*_merged.fastq.assembled.fastq;
+do
+  prefix=${file1%_merged.fastq.assembled.fastq} #Get file prefix
+  echo "Now on file $file1"
+
+  #Usearch files
+  #Note Clinical database, also pumping up identity to 99 because strains more related
+  usearch -usearch_global ${file1} -db ${cross}_reference_database_clinical.fasta -id 0.99 -blast6out usearch/all/${prefix}_98_merged.b6 -strand both
+done
+#End the cross loop
+done
+echo "Amplicon processing done!"
+
+```
+
+```{bash}
+#Now will remove all non-target loci (presumed to be cross amplifications)
+cd $BASEDIR/$INTERMED_DIR
+
+
+for cross in `cat cross_list.txt`;
+do
+#Move into correct directory for cross
+cd $BASEDIR/$INTERMED_DIR
+
+#move into cross directory
+cd ${cross}/usearch/all
+echo "Going into $cross folder"
+pwd
+
+  for merged_file in cross*_sample*_*_98_merged.b6
+  do 
+    prefix=${merged_file%_98_merged.b6} #Get file prefix
+    cross1_sample=${prefix#trimmed_} #Get cross sample combination
+    cross1=${cross1_sample%_sample*}
+    sample=${cross1_sample#cross*_}
+    locus=${sample#sample*_}
+    
+    echo "$merged_file"
+    echo "$prefix"
+    echo "$cross1_sample"
+    echo "$cross1"
+    echo "$sample"
+    echo "$locus"
+
+    sed -ni "/${locus}/p" ${merged_file}
+    #Double quotes key here, so that shell can interpret the variables
+  done
+
+  #Now to summarize the *.b6 results.
+
+  mkdir $BASEDIR/$INTERMED_DIR/outputs
+
+  #First let's include all *.b6 files for a given cross_sample set
+
+  for b6_file in ${cross}_sample*_*.b6;
+  do
+  wc -l $b6_file | awk 'BEGIN { OFS = "\t"; ORS = "\t" } {if($1!="0") print $2, $1}'
+  cut -f 2 ${b6_file%} | cut -d , -f 1 | sort | uniq -c | sort -nr | head -n 1 | awk 'BEGIN { OFS = "\t"; ORS = "\n"} {print $1, $2 }'
+  done > $BASEDIR/$INTERMED_DIR/outputs/${cross}_pairwise_two_strain_database17_98_locus.txt
+
+#End the cross loop
+done
+echo "Amplicon processing and strain assignment done!"
+
+
+```
+
+Download!
+
+```{bash}
+#FROM LOCAL TERMINAL
+scp -rp sldmunoz@crick.cse.ucdavis.edu:/home/sldmunoz/GbBSeq_human_IAV/runC_clinical/outputs/*  /Users/mixtup/Dropbox/mixtup/Documentos/ucdavis/papers/influenza_GbBSeq_human/human_influenza_GbBSeq/outputs/clinical/
+```
+
+### Second Set
+Now move on to demultiplexing in cross D, which are partial plates 
+
+```{bash}
+BASEDIR=/home/sldmunoz/GbBSeq_human_IAV
+cd $BASEDIR
+
+#1=runD
+#2=cross10,cross12 
+#3=clinical
+
+
+#Make a directory to hold all the intermediate files etc.
+INTERMED_DIR="runD""_""clinical"
+mkdir $INTERMED_DIR
+
+
+## First Copy Barcodes only for relevant crosses
+printf "cross10\ncross12\n" | grep -f - $BASEDIR/shared/barcodes5.fasta -A1 -w --no-group-separator > $INTERMED_DIR/barcodes5.fasta
+#Repeat with reverse barcodes
+printf "cross10\ncross12\n" | grep -f - $BASEDIR/shared/barcodes5rev.fasta -A1 -w --no-group-separator > $INTERMED_DIR/barcodes5rev.fasta
+
+#Now, similarly just need a few samples from 3' barcodes 
+
+#This piped command series does the following: 
+# creates a sequence of numbers in each line |
+# awk takes numbers from pipe and adds sample |
+# sample/number's are fed to grep which picks these samples from the barcode file  >
+# barcodes output to FASTA in current directory 
+
+for i in {1..3}  {13..15} {25..27} {37..39} {49..51} {61..63} {73..75} {85..87}; do echo $i; done | awk '$0="sample"$0' | grep -f - ~/GbBSeq_human_IAV/shared/barcodes3.fasta -A1 -w --no-group-separator > $INTERMED_DIR/barcodes3.fasta 
+
+#Same for reverse 3 (sample) barcodes
+for i in {1..3}  {13..15} {25..27} {37..39} {49..51} {61..63} {73..75} {85..87}; do echo $i; done | awk '$0="sample"$0' | grep -f - ~/GbBSeq_human_IAV/shared/barcodes3rev.fasta -A1 -w --no-group-separator > $INTERMED_DIR/barcodes3rev.fasta
+
+#Change into Run directory
+cd $INTERMED_DIR
+
+#First, I'll note that the barcode files have been generated.
+#Now will demultiplex cross and samples.
+cutadapt -g file:barcodes5.fasta -G file:barcodes3rev.fasta -O 8 --no-indels --action=none --discard-untrimmed -o trimmed_{name1}_{name2}_runD_R1.fastq -p trimmed_{name1}_{name2}_runD_R2.fastq ~/GbBSeq_human_IAV/data/runD_R1.fastq ~/GbBSeq_human_IAV/data/runD_R2.fastq > cutadapt_demultiplexing_report.txt
+
+#Checking on the success of this step
+head -n 25 cutadapt_demultiplexing_report.txt
+
+#Now let's trim those barcodes.
+
+for file in trimmed_cross*_sample*_runD_R1.fastq;
+do
+    prefix=${file%_runD_R1.fastq} #Get file prefix
+    cross_sample=${prefix#trimmed_} #Get cross sample combination
+    cross=${cross_sample%_sample*}
+    sample=${cross_sample#cross*_}
+    echo "$file"
+    echo "$prefix"
+    echo "$cross_sample"
+    echo "$cross"
+    echo "$sample"
+
+    barcode5=$(grep ${cross} -A1 -w --no-group-separator barcodes5.fasta | grep -v ${cross})
+    barcode5rev=$(grep ${cross} -A1 -w --no-group-separator barcodes5rev.fasta | grep -v ${cross})
+    barcode3=$(grep ${sample} -A1 -w --no-group-separator barcodes3.fasta | grep -v ${sample})
+    barcode3rev=$(grep ${sample} -A1 -w --no-group-separator barcodes3rev.fasta | grep -v ${sample})
+
+#Trimming barcodes noted above from entire run sequencingfile
+    cutadapt -a ${barcode5}...${barcode3} -A ${barcode3rev}...${barcode5rev} -O 8 -o ${cross}_${sample}_R1.fastq -p ${cross}_${sample}_R2.fastq trimmed_${cross}_${sample}_runD_R1.fastq trimmed_${cross}_${sample}_runD_R2.fastq >> cutadapt_amplicon_trimming.txt
+done
+
+#Check on status
+grep "Total written (filtered):" cutadapt_amplicon_trimming.txt
+#Ok, now 70's and 80's
+
+#Now we will trim the uni13 primer on all samples
+for file in cross*_sample*_R1.fastq;
+do
+  prefix=${file%_R1.fastq} #Get file prefix
+  cutadapt -a "CCTTGTTTCTACT" -G "^AGTAGAAACAAGG" -o uni13_${prefix}_R1.fastq -p uni13_${prefix}_R2.fastq ${prefix}_R1.fastq ${prefix}_R2.fastq  > cutadapt_${prefix}_uni13_trimming.txt
+done
+
+grep "Total written (filtered):" *uni13_trimming.txt
+#All in the 90's pretty much
+
+
+#Now we move to primer demultiplexing by locus:
+
+for file in uni13_cross*_sample*_R1.fastq;
+do
+  prefix=${file%_R1.fastq} #Get file prefix
+  cross_sample=${prefix#uni13_} #Get cross sample combination
+  
+  cutadapt -g file:$BASEDIR/shared/segment_specific_primers.fasta -A file:$BASEDIR/shared/segment_specific_primers_rev.fasta -e 0.0 -O 10 --no-indels -o ${cross_sample}_{name}_R1.fastq -p ${cross_sample}_{name}_R2.fastq ${prefix}_R1.fastq ${prefix}_R2.fastq > cutadapt_${cross_sample}_primer_demultiplexing.txt
+
+done
+
+#Check
+grep "Total written (filtered):" *_primer_demultiplexing.txt
+#All in the 90's
+
+echo "Demultiplexing done!"
+```
+
+Make cross list
+
+```{bash}
+cd $BASEDIR/$INTERMED_DIR
+printf "cross10\ncross12\n" > cross_list.txt
+```
+
+
+```{bash}
+#Change into folder that has amplicons that requires processing. This folder will be generated by demultiplexing script
+cd $BASEDIR/$INTERMED_DIR
+pwd
+
+
+#Initial loop to target only the crosses we need
+for cross in `cat cross_list.txt`;
+do
+  echo "Making a directory for $cross"
+  mkdir ${cross}/
+  
+  cross_number=${cross#cross}
+  echo "$cross_number"
+  echo "Making custom database for $cross"
+  echo "Strains picked:"
+  grep ^${cross_number} $BASEDIR/data/cross_data_clinical_samples.csv | awk -F "," '{print $2; print $3}'
+  
+  grep "^${cross_number}," $BASEDIR/data/cross_data_clinical_samples.csv | awk -F "," '{print $2; print $3}' | grep -f - ../shared/reference_database_clinical.fasta -A1 --no-group-separator > ${cross}/${cross}_reference_database_clinical.fasta
+
+  #Now need to do locus aware PEAR merge on all samples in this directory
+  for file in ${cross}_sample*_*_R1.fastq;
+  do
+    prefix=${file%_R1.fastq} #Get file prefix
+    echo "Now on file $file"
+    echo "$prefix"
+    #Merge reads
+    pear -f ${prefix}_R1.fastq -r ${prefix}_R2.fastq -o ${cross}/${prefix}_merged.fastq -v 3
+  done
+done
+
+echo "Custom Databases for each cross done. PEAR R1 and R2 merging done"
+echo "Now moving to matching amplicons to our custom databases with usearch, and then tallying matches to asign strains"
+
+#Now do the usearch'ing - HERE AS OF NOV 19, 2021 3:20pm
+
+cd $BASEDIR/$INTERMED_DIR
+
+for cross in `cat cross_list.txt`;
+do
+#Move into correct directory for cross
+cd $BASEDIR/$INTERMED_DIR
+
+#Make directory to hold results
+mkdir ${cross}/usearch
+mkdir ${cross}/usearch/all
+
+#move into cross directory
+cd ${cross}/
+echo "Going into $cross folder"
+pwd
+
+#Now lookup reads on custom database for each cross (note the loop is going over *all* *.b6 files).
+for file1 in cross*_sample*_*_merged.fastq.assembled.fastq;
+do
+  prefix=${file1%_merged.fastq.assembled.fastq} #Get file prefix
+  echo "Now on file $file1"
+
+  #Usearch files
+  #Note Clinical database, also pumping up identity to 99 because strains more related
+  usearch -usearch_global ${file1} -db ${cross}_reference_database_clinical.fasta -id 0.99 -blast6out usearch/all/${prefix}_98_merged.b6 -strand both
+done
+#End the cross loop
+done
+echo "Amplicon processing done!"
+
+```
+
+```{bash}
+#Now will remove all non-target loci (presumed to be cross amplifications)
+cd $BASEDIR/$INTERMED_DIR
+
+
+for cross in `cat cross_list.txt`;
+do
+#Move into correct directory for cross
+cd $BASEDIR/$INTERMED_DIR
+
+#move into cross directory
+cd ${cross}/usearch/all
+echo "Going into $cross folder"
+pwd
+
+  for merged_file in cross*_sample*_*_98_merged.b6
+  do 
+    prefix=${merged_file%_98_merged.b6} #Get file prefix
+    cross1_sample=${prefix#trimmed_} #Get cross sample combination
+    cross1=${cross1_sample%_sample*}
+    sample=${cross1_sample#cross*_}
+    locus=${sample#sample*_}
+    
+    echo "$merged_file"
+    echo "$prefix"
+    echo "$cross1_sample"
+    echo "$cross1"
+    echo "$sample"
+    echo "$locus"
+
+    sed -ni "/${locus}/p" ${merged_file}
+    #Double quotes key here, so that shell can interpret the variables
+  done
+
+  #Now to summarize the *.b6 results.
+
+  mkdir $BASEDIR/$INTERMED_DIR/outputs
+
+  #First let's include all *.b6 files for a given cross_sample set
+
+  for b6_file in ${cross}_sample*_*.b6;
+  do
+  wc -l $b6_file | awk 'BEGIN { OFS = "\t"; ORS = "\t" } {if($1!="0") print $2, $1}'
+  cut -f 2 ${b6_file%} | cut -d , -f 1 | sort | uniq -c | sort -nr | head -n 1 | awk 'BEGIN { OFS = "\t"; ORS = "\n"} {print $1, $2 }'
+  done > $BASEDIR/$INTERMED_DIR/outputs/${cross}_pairwise_two_strain_database17_98_locus.txt
+
+#End the cross loop
+done
+echo "Amplicon processing and strain assignment done!"
+
+
+```
+
+Download!
+
+```{bash}
+#FROM LOCAL TERMINAL
+scp -rp sldmunoz@crick.cse.ucdavis.edu:/home/sldmunoz/GbBSeq_human_IAV/runD_clinical/outputs/*  /Users/mixtup/Dropbox/mixtup/Documentos/ucdavis/papers/influenza_GbBSeq_human/human_influenza_GbBSeq/outputs/clinical/
+```
+

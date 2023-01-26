@@ -1,0 +1,4 @@
+﻿cross_id,strainA,strainB,moi,timepoint,incubation_temp,trypsin,infection_plate,run_id,same_subtype,subtype,category,subcategory,plaque_purified
+10,H3N2-NYU-23,H3N2-NYU-26,10,12,4,N,,D,Y,H3N2,Experimental,Clinical,N
+11,H3N2-NYU-19,H3N2-NYU-23,10,12,4,N,,C,Y,H3N2,Experimental,Clinical,N
+12,H3N2-NYU-19,H3N2-NYU-26,10,12,4,N,,D,Y,H3N2,Experimental,Clinical,N

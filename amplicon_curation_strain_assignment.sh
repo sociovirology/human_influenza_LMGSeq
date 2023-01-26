@@ -96,5 +96,54 @@ echo "Amplicon processing done!"
 
 #Now need to add processing and summary
 
+#Now will remove all non-target loci (presumed to be cross amplifications)
+cd $BASEDIR/$INTERMED_DIR
+
+
+for cross in `cat cross_list.txt`;
+do
+#Move into correct directory for cross
+cd $BASEDIR/$INTERMED_DIR
+
+#move into cross directory
+cd ${cross}/usearch/all
+echo "Going into $cross folder"
+pwd
+
+  for merged_file in cross*_sample*_*_98_merged.b6
+  do 
+    prefix=${merged_file%_98_merged.b6} #Get file prefix
+    cross1_sample=${prefix#trimmed_} #Get cross sample combination
+    cross1=${cross1_sample%_sample*}
+    sample=${cross1_sample#cross*_}
+    locus=${sample#sample*_}
+    
+    echo "$merged_file"
+    echo "$prefix"
+    echo "$cross1_sample"
+    echo "$cross1"
+    echo "$sample"
+    echo "$locus"
+
+    sed -ni "/${locus}/p" ${merged_file}
+    #Double quotes key here, so that shell can interpret the variables
+  done
+
+  #Now to summarize the *.b6 results.
+
+  mkdir cd $BASEDIR/$INTERMED_DIR/outputs
+
+  #First let's include all *.b6 files for a given cross_sample set
+
+  for b6_file in ${cross}_sample*_*.b6;
+  do
+  wc -l $b6_file | awk 'BEGIN { OFS = "\t"; ORS = "\t" } {if($1!="0") print $2, $1}'
+  cut -f 2 ${b6_file%} | cut -d , -f 1 | sort | uniq -c | sort -nr | head -n 1 | awk 'BEGIN { OFS = "\t"; ORS = "\n"} {print $1, $2 }'
+  done > $BASEDIR/$INTERMED_DIR/outputs/${cross}_pairwise_two_strain_database17_98_locus.txt
+
+#End the cross loop
+done
+echo "Amplicon processing and strain assignment done!"
+
 
 

@@ -5,9 +5,9 @@
 #### 4. Population Genetic Statistics
 #### 5. Testing Strain Specificity
 
-# Pairwise coinfection analyses Script for Influenza GbBSeq
+# Pairwise coinfection analyses Script for Influenza LMGSeq
 # Script: pairwise_coinfections.R
-# This file is an R script that analyzes strain assignment data from a GbBSeq experiment
+# This file is an R script that analyzes strain assignment data from a LMGSeq experiment
 # Requires running demultiplexing.sh and amplicon_curation_strain_assignment.sh to generate output files for *pairwise coinfections*:
 #   ./demultiplexing.sh runA "shared/cross_list_runA_pairwise.txt" pairwise_infections
 #   ./amplicon_curation_strain_assignment.sh runA "shared/cross_list_runA_pairwise.txt" pairwise_infections
@@ -125,11 +125,7 @@ two_strain_database17_98_locus %>% group_by(strainAB, locus) %>%
 # 2. Antigenic Segment Processing ----
 # This section uses information from each of two PCR loci (HA3a, HA1b, NA1c, NA3a) for each antigenic segment (HA and NA)
  # to decide which strain to assign to that given segment in each progeny isolate clone (sample).
- # Aside from using read data, we also used information from control GbBSeq runs (including a single strain)
-
-
-#START HERE Oct 28, 2022
-
+ # Aside from using read data, we also used information from control LMGSeq runs (including single strain LMGSeq to establish thresholds for how  primers work behave with just one strain background)
 
 #Total Rows in data frame
 nrow(two_strain_database17_98_locus)
@@ -141,10 +137,10 @@ locus_by_cross <- two_strain_database17_98_locus %>% group_by(strainAB, locus) %
     number_samples = length(cross_sample),
   )
 
-#NA's
+#NA (neuraminidase) reads
 View(locus_by_cross[grep("NA", locus_by_cross$locus), ])
 
-#HA's
+#HA (hemagglutinin) reads
 View(locus_by_cross[grep("HA", locus_by_cross$locus), ])
 
 ## 2.1 NA Segment  ----
@@ -161,7 +157,7 @@ na_by_sample <- group_by(na, cross_sample) %>%
     count = n()
   )
 
-#How many have 2 NA loci called?
+#How many samples have 2 NA loci called?
 nrow(subset(na_by_sample, count == 2))
 #[1] 347
 
@@ -176,7 +172,7 @@ nrow(subset(na, count == 2))
 #Let's subset to these only, the others we can leave untouched
 na_two <- subset(na, count == 2)
 
-#First, there should be no CA09_SI86 samples or HK68_PAN99
+#First, as a sanity check there should be no CA09_SI86 samples or HK68_PAN99 because those are same-subtype
 filter(na_two, strainAB == "CA09_SI86" | strainAB == "HK68_PAN99")
 #<0 rows> (or 0-length row.names)
 #Looks good.
@@ -188,7 +184,7 @@ na_two_wider <- na_two %>% group_by(cross_sample, locus) %>%
     majority_assigned_reads = sum(majority_assigned_reads),
   )
 
-#View
+#Check pivot with View() before implementing
 #View(pivot_wider(na_two_wider, names_from = locus, values_from =  majority_assigned_reads))
 
 #Implement
@@ -199,6 +195,7 @@ nrow(na_two_wider)
 #347
 #So one row per sample
 
+#Number of reads per sample with NA1c loci and NA3a loci
 ggplot(na_two_wider, aes(x = NA1c, y = NA3a)) + geom_point()
 
 #So our strategy is to add a "remove" data frame, which will have a 'cross_sample_locus' column,
@@ -206,7 +203,7 @@ ggplot(na_two_wider, aes(x = NA1c, y = NA3a)) + geom_point()
 
 #Our starting rule is going to be NA3a's < 100 we want to give to NA1c, and NA1c's <3 we want to give to NA3a
 
-#But first, let's just agree that any where NA1c is equal or majority, should be NA1c
+#But first, let's just agree that any where NA1c is equal or majority, should be NA1c (NA1c is longer locus and is more rare than NA3a which is short and heavily favored by Illumina)
 #View(subset(na_two_wider, NA3a < NA1c))
 nrow(subset(na_two_wider, NA3a <= NA1c))
 #141
@@ -226,7 +223,7 @@ nrow(remove_na)
 na_two_wider <- anti_join(na_two_wider, remove_na)
 
 #Now among the ones where NA3a is greater than NA1c, let's assign remaining:
-#We will recursively add to the remove DF, as we go through each condition, may circle back to this later
+#We will recursively add to the remove DF, as we go through each condition
 
 #First, remove those that do not meet criteria to assign to NA1c and add to 
 cross_sample <- c(cross_sample, subset(na_two_wider, NA1c < 3)$cross_sample)
@@ -312,11 +309,9 @@ filter(two_strain_database17_98_locus, locus == "NA3a" | locus == "NA1c") %>%
 #Now rename all the NA loci
 two_strain_database17_98_locus$locus[grep("NA", two_strain_database17_98_locus$locus)] <- "NA"
 #DONE!!!!! 
+##### End NA processing
 
-##### End NA #####
-
-
-##### Second HA #####
+## 2.2 HA Segment  ----
 #Lets check how many samples have any HA segments
 nrow(two_strain_database17_98_locus[grep("HA", two_strain_database17_98_locus$locus), ])
 #[1] 1124
@@ -345,13 +340,12 @@ nrow(subset(ha, count == 2))
 #Let's subset to these only, the others we can leave untouched
 ha_two <- subset(ha, count == 2)
 
-#First, there should be no CA09_SI86 samples or HK68_PAN99
+#First, same as NA, as a sanity check there should be no CA09_SI86 samples or HK68_PAN99 because those are same-subtype
 filter(ha_two, strainAB == "CA09_SI86" | strainAB == "HK68_PAN99")
 #<0 rows> (or 0-length row.names)
 #Looks good.
 
 #Now down the line
-#Using a single rule for all HA1/HA3 decisions based on manual inspection
 ha_two_wider <- ha_two %>% group_by(cross_sample, locus) %>%
   summarise(
     majority_assigned_reads = sum(majority_assigned_reads),
@@ -368,14 +362,13 @@ nrow(ha_two_wider)
 #235
 #So one row per sample
 
+#Number of reads per sample with NA1c loci and NA3a loci
 ggplot(ha_two_wider, aes(x = HA1b, y = HA3a)) + geom_point()
 
 #So our strategy is to add a "remove" data frame, which will have a 'cross_sample_locus' column,
 # that will then be used as a key to remove rows from the larger database
 
-#Our starting rule is going to be NA3a's < 100 we want to give to NA1c, and NA1c's <3 we want to give to NA3a
-
-#But first, let's just agree that any sample where HA1b is equal or majority, the HA3a locus should be marked for removal
+#But first, let's just agree that any sample where HA1b is equal or majority, the HA3a locus should be marked for removal (HA3a is a small locus heavily favored by Illumina sequencing, and yes, David did warn me about this when designing my primers, but there's a lot of variability!)
 #View(subset(ha_two_wider, HA3a <= HA1b))
 nrow(subset(ha_two_wider, HA3a <= HA1b))
 #36
@@ -390,14 +383,14 @@ remove_ha <- data.frame(cross_sample,cross_sample_locus)
 nrow(remove_ha)
 #36
 
-#Now remove those from the na_two_wider data frame so I can whittle things down
+#Now remove those from the ha_two_wider data frame so I can whittle things down
 #View(anti_join(ha_two_wider, remove_ha)) #199 made a small dent
 ha_two_wider <- anti_join(ha_two_wider, remove_ha)
 
 #Now among the ones where HA3a is greater than HA1b, let's assign remaining:
 #We will recursively add to the remove DF, as we go through each condition, may circle back to this later
 
-#Controls show that HA1b can't really be amplified by HA3a's. But very conservatively I will exclude 
+#Controls show that HA1b locus can't really be amplified in H3 strains. But very conservatively I will exclude 
 # singleton HA1b's across the board
 #View(subset(ha_two_wider, HA1b == 1))
 nrow(subset(ha_two_wider, HA1b == 1))
@@ -415,7 +408,7 @@ nrow(remove_ha)
 #View(anti_join(ha_two_wider, remove_ha)) #152, making progress now
 ha_two_wider <- anti_join(ha_two_wider, remove_ha)
 
-#Second, will accept all HA1b's >2, when HA3a's are < 1000. So remove HA3a's under 1000. 
+#Second, will accept all HA1b's >2, when HA3a's are < 1000. So remove HA3a's under 1000. Again HA1b is a large amplicon that is disfavored in Illumina sequencing and doesn't really amplify from H3 samples 
 #View(subset(ha_two_wider,  HA3a < 1000))
 nrow(subset(ha_two_wider,  HA3a < 1000))
 #127
@@ -486,9 +479,9 @@ filter(two_strain_database17_98_locus, locus == "HA3a" | locus == "HA1b") %>%
 
 #Now rename all the HA loci
 two_strain_database17_98_locus$locus[grep("HA", two_strain_database17_98_locus$locus)] <- "HA"
+##### End HA processing
 
-
-##### End HA #####
+# 3. Quality measures of strain assignments and calculation of reassortment frequencies
 
 #Checking how good the assignments are
 mean(two_strain_database17_98_locus$proportion_assigned)
@@ -507,17 +500,13 @@ nrow(subset(two_strain_database17_98_locus, proportion_assigned > .70)) / nrow(t
 nrow(subset(two_strain_database17_98_locus, proportion_assigned > .65)) / nrow(two_strain_database17_98_locus)
 #0.9544278
 
-#Histogram
+#Histogram of the proportion of reads assigned to one strain (note this is expected to be close to 1, because plaques should be clonal but sequencing errors particularly when read count is small can lead to lower proportions)
 ggplot(two_strain_database17_98_locus, aes(x = proportion_assigned)) + geom_histogram()
 
-
-#Now run some numbers and stats tests
-  #t-test for trypsin no-trypsin (may need to control for strains)
-  #regression? ordered ANOVA for timepoints OR binomial regression? Reassortant/not 
-
-#Plot
+#First reassortment plot after correcting for antigenic segments
 ggplot(two_strain_database17_98_locus, aes(x = locus, y = sample)) + geom_point(aes(col=majority_strain, alpha=proportion_assigned), shape=15, size = 6) + theme(axis.text.x = element_text(angle=90)) + facet_wrap(~ cross)
 
+#Rename data frame
 controls_df <- two_strain_database17_98_locus
 
 #First need to get the number of typed loci for each sample
@@ -530,16 +519,16 @@ controls_df_loci_numbers <- controls_df %>%
 
 controls_df <- right_join(controls_df, controls_df_loci_numbers)
 
-#Once we have numbers, sort by parentals and limit to complete genotypes
+#Once we have numbers, sort by parentals and limit to complete genotypes and plot
 ggplot(subset(controls_df, total_segments > 7), aes(x = locus, y = reorder(sample, max_majority_strain))) + geom_point(aes(col=majority_strain, alpha=proportion_assigned), shape=15, size = 6) + theme(axis.text.x = element_text(angle=90)) + facet_wrap(~ cross, scales = "free_y")
 
-#Once we have numbers, sort by parentals and limit to complete genotypes and pairwise grid
+#Once we have numbers, sort by parentals and limit to complete genotypes and pairwise grid and plot
 ggplot(subset(controls_df, total_segments > 7), aes(x = locus, y = sample)) + geom_point(aes(col=majority_strain, alpha=proportion_assigned), shape=15, size = 6) + theme(axis.text.x = element_text(angle=90), axis.text.y = element_blank()) + facet_grid(strainA ~ strainB, scales = "free_y")
 
 #Pairwise grid
 ggplot(controls_df, aes(x = locus, y = sample)) + geom_point(aes(col=majority_strain, alpha=proportion_assigned), shape=15, size = 6) + theme(axis.text.x = element_text(angle=90), axis.text.y = element_blank()) + facet_grid(strainA ~ strainB, scales = "free_y")
 
-#Not ordered
+#Not ordered by parentals/reassortants
 ggplot(controls_df, aes(x = locus, y = sample)) + geom_point(aes(col=majority_strain, alpha=proportion_assigned), shape=15, size = 6) + theme(axis.text.x = element_text(angle=90)) + facet_wrap(~ cross)
 
 #Not ordered
@@ -547,11 +536,11 @@ ggplot(controls_df, aes(x = locus, y = sample)) + geom_point(aes(col=majority_st
 #Not ordered at least 7 segments
 ggplot(subset(controls_df, total_segments > 6), aes(x = locus, y = sample)) + geom_point(aes(col=majority_strain, alpha=proportion_assigned), shape=15, size = 6) + theme(axis.text.x = element_text(angle=90)) + theme(axis.text.y = element_blank()) + facet_grid(strainA ~ strainB, scales = "free_y")
 
-#Figure 2A - Not ordered, all samples genotypes, order segments 
+#Figure 2A - Not ordered, all samples genotypes, order segments in proper influenza order
 ggplot(controls_df, aes(x = factor(locus, level = c('PB2f', 'PB1c', 'PAc', 'HA', 'NPd', 'NA', 'Mg', 'NS1d')), y = sample)) + geom_point(aes(col=majority_strain), shape=15, size = 6) + theme(axis.text.x = element_text(angle=90)) + xlab("Segment") + ylab("Plaque Isolate") + theme(axis.text.y = element_blank()) + facet_grid(strainA ~ strainB, scales = "free_y")
-#Let's spruce up re: Elodie comments 
+#Let's spruce up re: Elodie comments, this is the final figure 2A
 ggplot(controls_df, aes(x = factor(locus, level = c('PB2f', 'PB1c', 'PAc', 'HA', 'NPd', 'NA', 'Mg', 'NS1d')), y = sample)) + geom_point(aes(col=majority_strain), shape=15, size = 6) + xlab("Segment") + ylab("Plaque Isolate") + facet_grid(strainA ~ strainB, scales = "free_y") + theme_tufte() +  theme(text = element_text(size = 20,  family="Helvetica")) + theme(axis.text.x = element_text(angle=90, size = 17)) + theme(axis.text.y = element_blank()) + theme(strip.text = element_text(face = "bold")) + theme(legend.position = "none")      
-
+ggsave("outputs/figure2A.pdf", width = 8, height = 11)
 
 #Now let's generate some numbers!
 parentals <- controls_df %>% 
@@ -561,16 +550,9 @@ parentals <- controls_df %>%
     #total_segments == max_majority_strain
   )
 
-#Complete Genotypes Only
-#parentals <- subset(controls_df, total_segments > 7) %>% 
-#  group_by(cross_sample, cross, sample) %>% 
-#  summarise(
-#  parental = max_majority_strain == total_segments,
-#  #total_segments == max_majority_strain
-#)
-
 parentals <- distinct(parentals)
 
+#This table gives a quick look at the number of samples per cross that are parentals (i.e. not reassortant)
 table(parentals$cross, parentals$parental)
 
 #Group by cross_sample and calculate number of parents for each
@@ -582,16 +564,6 @@ controls_df_number_parents <- controls_df %>%
     max_majority_strain = max(table(majority_strain))
   )
 
-#Complete Genotypes Only 
-#Group by cross_sample and calculate number of parents for each
-#controls_df_number_parents <- subset(controls_df, total_segments > 7) %>% 
-#  group_by(cross, cross_sample) %>% 
-#  summarise(
-#    number_parents = length(unique(majority_strain)),
-#    #constellation = paste(majority_strain_locus, sep = ","),
-#    max_majority_strain = max(table(majority_strain))
-#  )
-
 nrow(subset(controls_df_number_parents, number_parents == 2))
 #470
 nrow(controls_df_number_parents)
@@ -600,6 +572,7 @@ nrow(controls_df_number_parents)
 #Make a reasortant column 
 controls_df_number_parents <- mutate(controls_df_number_parents, reassortant = ifelse(number_parents > 1, yes = 1, no = 0))
 
+#Make a data frame that has per-cross (i.e. experimental coinfection) statistics
 cross_stats <- controls_df_number_parents %>% 
   group_by(cross) %>% 
   summarise(
@@ -609,11 +582,79 @@ cross_stats <- controls_df_number_parents %>%
     #max_majority_strain = max(table(majority_strain))
   )
 
-#Add proportion reassortant to data frame
+#Add proportion reassortant to data frame that has per-cross stats
 cross_stats <- mutate(cross_stats, prop_reassortant = reassortants / clones)
 
-#AFTER SENDING DRAFT - APRIL 28 
-# Make a supplementary figure that has only 8 segment, 7 segment, or any amount of segments 
+#Now we want to check if we include only samples that have complete genotypes, do our estimates change significantly
+# Make stat test looking only at complete genotypes
+#Complete Genotypes Only 
+#Group by cross_sample and calculate number of parents for each
+controls_df_number_parents_complete <- subset(controls_df, total_segments > 7) %>% 
+  group_by(cross, cross_sample) %>% 
+  summarise(
+    number_parents = length(unique(majority_strain)),
+    #constellation = paste(majority_strain_locus, sep = ","),
+    #max_majority_strain = max(table(majority_strain))
+  )
+nrow(subset(controls_df_number_parents_complete, number_parents == 2))
+#229
+nrow(controls_df_number_parents_complete)
+#[1] 417
+
+#Make a reasortant column 
+controls_df_number_parents_complete <- mutate(controls_df_number_parents_complete, reassortant = ifelse(number_parents > 1, yes = 1, no = 0))
+
+cross_stats_complete <- controls_df_number_parents_complete %>% 
+  group_by(cross) %>% 
+  summarise(
+    clones = length(number_parents),
+    reassortants = sum(reassortant)
+    #constellation = paste(majority_strain_locus, sep = ","),
+    #max_majority_strain = max(table(majority_strain))
+  )
+
+#Add proportion reassortant to data frame
+cross_stats_complete <- mutate(cross_stats_complete, prop_reassortant = reassortants / clones)
+# A tibble: 10 × 4
+#cross   clones reassortants prop_reassortant
+#<chr>    <int>        <dbl>            <dbl>
+#1 cross1      11            1           0.0909
+#2 cross11     11            8           0.727 
+#3 cross14     88           64           0.727 
+#4 cross15     84           49           0.583 
+#5 cross18     32           32           1     
+#6 cross19      8            3           0.375 
+#7 cross2      12            0           0     
+#8 cross3      66           49           0.742 
+#9 cross7      82           10           0.122 
+#10 cross8      23           13           0.565
+# Some of the reassortment estimates change, mostly in those where the sample size is substantially reduced
+#Note that we get a cross that is 100% reassortant! Higher and lower estimates at the extremes
+
+#Make a stats test that will check if the proportions with complete and incomplete genotypes differ
+#Testing 
+prop.test(c(cross_stats_complete$reassortants[1], cross_stats$reassortants[1]), c(cross_stats_complete$clones[1], cross_stats$clones[1]))
+#X-squared = 0.046507, df = 1, p-value = 0.8293
+prop.test(c(cross_stats_complete$reassortants[2], cross_stats$reassortants[2]), c(cross_stats_complete$clones[2], cross_stats$clones[2]))
+#X-squared = 2.2667, df = 1, p-value = 0.1322
+prop.test(c(cross_stats_complete$reassortants[3], cross_stats$reassortants[3]), c(cross_stats_complete$clones[3], cross_stats$clones[3]))
+#X-squared = 0.00047413, df = 1, p-value = 0.9826
+prop.test(c(cross_stats_complete$reassortants[4], cross_stats$reassortants[4]), c(cross_stats_complete$clones[4], cross_stats$clones[4]))
+#X-squared = 0.075335, df = 1, p-value = 0.7837
+prop.test(c(cross_stats_complete$reassortants[5], cross_stats$reassortants[5]), c(cross_stats_complete$clones[5], cross_stats$clones[5]))
+#X-squared = 1.2593, df = 1, p-value = 0.2618
+prop.test(c(cross_stats_complete$reassortants[6], cross_stats$reassortants[6]), c(cross_stats_complete$clones[6], cross_stats$clones[6]))
+#X-squared = 1.1587, df = 1, p-value = 0.2817
+prop.test(c(cross_stats_complete$reassortants[7], cross_stats$reassortants[7]), c(cross_stats_complete$clones[7], cross_stats$clones[7]))
+#X-squared = 1.9557e-30, df = 1, p-value = 1
+prop.test(c(cross_stats_complete$reassortants[8], cross_stats$reassortants[8]), c(cross_stats_complete$clones[8], cross_stats$clones[8]))
+#X-squared = 0.14773, df = 1, p-value = 0.7007
+prop.test(c(cross_stats_complete$reassortants[9], cross_stats$reassortants[9]), c(cross_stats_complete$clones[9], cross_stats$clones[9]))
+#X-squared = 0.001833, df = 1, p-value = 0.9658
+prop.test(c(cross_stats_complete$reassortants[10], cross_stats$reassortants[10]), c(cross_stats_complete$clones[10], cross_stats$clones[10]))
+#X-squared = 1.1108, df = 1, p-value = 0.2919
+
+#All p-values greater than 0.1322, many close to 1
 
 #Going forward with allowing incomplete genotypes, because this is conservative with respect to reassortemnt, because missing segments decrease the chance of detecting a reassortant
 ggplot(controls_df, aes(x = locus, y = reorder(sample, max_majority_strain))) + geom_point(aes(col=majority_strain, alpha=proportion_assigned), shape=15, size = 6) + theme(axis.text.x = element_text(angle=90)) + facet_wrap(~ cross)
@@ -632,10 +673,11 @@ cross_stats <- left_join(cross_stats, cross_data_runA, by = "cross")
 
 #Same but reorder by height with line for 40% reassortment but then also for the theoretical free reassortment and add strain info on x axis 
 ggplot(cross_stats, aes(x = reorder(strainAB, prop_reassortant), y = prop_reassortant)) + geom_col() + ylab("Proportion of Reassortant Plaque Isolates") + xlab("Strains in Experimental Coinfection") + geom_hline(yintercept = 0.40, linetype = 2, color = "grey", alpha = 0.75) + geom_hline(yintercept = 0.9921875, linetype = 2, color = "red", alpha = 0.75)
-#Update for better publication quality
+#Update for better publication quality. This is the final Figure 2B
 ggplot(cross_stats, aes(x = reorder(strainAB, prop_reassortant), y = prop_reassortant)) + geom_col() + ylab("Proportion of Reassortant Plaque Isolates") + xlab("Strains in Experimental Coinfection") + geom_hline(yintercept = 0.40, linetype = 2, color = "grey", alpha = 0.75) + geom_hline(yintercept = 0.9921875, linetype = 2, color = "red", alpha = 0.75) + theme_tufte() +  theme(text = element_text(size = 20,  family="Helvetica")) + theme(axis.text.x = element_text(size = 12)) + theme(legend.position = "none") + theme(panel.grid.major.y = element_line(color = "lightgray",size = 0.5)) 
+ggsave("outputs/figure2B.pdf", width = 12, height = 8.5)
 
-#Now more stats
+#Now more stats across all crosses 
 mean(cross_stats$prop_reassortant)
 #[1] 0.4895833
 
@@ -663,6 +705,9 @@ binom.test(c(89, 7), p = 254/256)
 #  probability of success 
 #0.9270833
 
+#In highest reassortment experimental coinfection we are numerically close to "perfect" or random reassortment (0.9921875 versus 0.9270833),
+ # but is was statistically significantly lower. So random reassortment is rejected
+
 controls_df <- right_join(controls_df, cross_stats)
 
 #Does strain identity affect the proportion of reassortants?
@@ -671,13 +716,10 @@ ggplot(controls_df, aes(x = cross, y = prop_reassortant)) + geom_point(aes(color
 #Does strain identity affect the proportion of reassortants? Heatmap attempt
 ggplot(controls_df, aes(x = strainA, y = strainB, fill= prop_reassortant)) + geom_tile()
 
-#Heatmap! This is Figure 3A
+#Heatmap! This is a useful way to visualize reassortment by strain, but perhaps not as intutive as the final figure (see below)  
 ggplot(controls_df, aes(x = strainA, y = strainB, fill= prop_reassortant)) + geom_tile() + geom_text(aes(label = round(prop_reassortant, 2))) + theme(legend.position = "none") + scale_fill_gradient(low = "white", high = "red") 
 
-#This doesn't work, because of double counting of strains 
-#model1 <- lm(prop_reassortant ~ strainA + strainB, controls_df)
-
-#Let's calculate the averages and SD's of each
+#Let's calculate the averages and SD's of each strain
 #SI86
 mean(subset(cross_stats, strainA == "SI86" | strainB == "SI86", select = prop_reassortant, drop = T))
 #[1] 0.6484375
@@ -709,13 +751,18 @@ sd(subset(cross_stats, strainA == "CA09" | strainB == "CA09", select = prop_reas
 #0.3866347
 
 #Alternative to heatmap, potential new Figure 3A
+#This is just a spreadsheet that lists reassortment frequencies for each strain (note they are "double counted")
 cross_stats_manual <- read.csv("cross_stats_manual.csv")
 View(cross_stats_manual)
 ggplot(cross_stats_manual, aes(x = strain, y = prop_reassortant)) + geom_point()
+#This is Figure 4A, and nicely shows how some strains tend to produce higher reassortment frequencies (see SI86 verus CA09 for an extreme visual example) Stats test follows below
 ggplot(cross_stats_manual, aes(x = strain, y = prop_reassortant)) + geom_boxplot() + geom_point(aes(colour = as.factor(prop_reassortant), size = 8)) + scale_color_brewer(palette = 'Set3') + xlab("Strain") + ylab("Proportion of Reassortant Plaque Isolates") + theme(legend.position = "none") + theme_tufte() + theme(text = element_text(size = 20,  family="Helvetica")) + theme(axis.text.x = element_text(size = 12)) + theme(legend.position = "none") + theme(panel.grid.major.y = element_line(color = "lightgray",size = 0.5))
 
+#START HERE NOV 16, 2022
 
 #Let's do a quick proportion test on the reassortment data
+
+#This test looks at each 
 prop.test(cross_stats$reassortants, cross_stats$clones)
 #	10-sample test for equality of proportions without continuity correction
 

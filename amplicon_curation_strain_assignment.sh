@@ -7,6 +7,9 @@
 
 #Now hardcoded for each run, but will loop across specified crosses (initally just runB_cross11 as a test)
 
+#Enable error handling (strict)
+set -euo pipefail
+
 if [ "$#" -ne 3 ]; then
     echo "You must enter exactly 3 command line arguments: run, cross, and experiment"
     echo "run has format 'runA'"
@@ -22,8 +25,15 @@ echo $2
 echo $3
 
 #Establish base directory where the script resides
-BASEDIR=$(dirname "$0")
+BASEDIR=$(dirname "$(readlink -f "$0")")
 echo $BASEDIR
+
+#Does the cross list file exist?
+if [ ! -f "$BASEDIR/$2" ]; then
+    echo "ERROR: Cross list file not found: $BASEDIR/$2"
+    exit 1
+fi
+
 INTERMED_DIR="$1""_""$3"
 echo $INTERMED_DIR
 
@@ -31,7 +41,7 @@ echo $INTERMED_DIR
 cd $BASEDIR/$INTERMED_DIR
 pwd
 #copy the cross list to make things easier in terms of file paths 
-cp $BASEDIR/shared/cross_list_runA_pairwise.txt cross_list.txt
+cp $BASEDIR/$2 cross_list.txt
 
 #Initial loop to target only the crosses we need
 for cross in `cat cross_list.txt`;
@@ -131,7 +141,7 @@ pwd
 
   #Now to summarize the *.b6 results.
 
-  mkdir cd $BASEDIR/$INTERMED_DIR/outputs
+   mkdir -p $BASEDIR/$INTERMED_DIR/outputs
 
   #First let's include all *.b6 files for a given cross_sample set
 

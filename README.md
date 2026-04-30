@@ -8,15 +8,16 @@ Kishana Y. Taylor | Ilechukwu Agu  | Ivy José | Sari Mäntynen | A.J. Campbell 
 If you are reading or using this, let us know how these data were useful for you. If you use these data and code, please cite the repository or the paper. Always open to collaborate! Please contact us!
 
 ### Quick Start
-1. Make sure packages are installed (see #2 below) or use gbbseq-env.yml to set up Anaconda environment
-2. git clone https://github.com/sociovirology/human_influenza_GbBSeq.git
-3. chmod +x demultiplexing_GbBSeq6.sh
-4. ./demultiplexing_GbBSeq6.sh runA "shared/cross_list_runA_pairwise.txt" pairwise_infections (pairwise)
-5. ./demultiplexing_infection_conditions.sh (controls)
-6. chmod +x amplicon_curation_strain_assignment.sh
-6. ./amplicon_curation_strain_assignment.sh runA "shared/cross_list_runA_pairwise.txt" pairwise_infections
-6. Rscript aiv_detection_environment_analysis.R (or load interactively in R)
-7. Rscript aiv_detection_environment_analysis.R (or load interactively in R)
+1. Make sure packages are installed (see #2 below) or use gbbseq-env.yml to set up Anaconda environment:
+   `conda env create -f gbbseq-env.yml && conda activate gbbseq`
+2. `git clone https://github.com/sociovirology/human_influenza_LMGSeq.git`
+3. `chmod +x demultiplexing.sh amplicon_curation_strain_assignment.sh`
+4. `./demultiplexing.sh runA "shared/cross_list_runA_pairwise.txt" pairwise_infections` (pairwise)
+5. `./demultiplexing.sh runA "shared/cross_list_runA_control.txt" control_infections` (controls)
+6. `./amplicon_curation_strain_assignment.sh runA "shared/cross_list_runA_pairwise.txt" pairwise_infections`
+7. `./amplicon_curation_strain_assignment.sh runA "shared/cross_list_runA_control.txt" control_infections`
+8. `Rscript control_infections_two_strain_cross2.R` (or load interactively in R)
+9. `Rscript pairwise_infections.R` (or load interactively in R)
 
 ### CONTENTS
 1. Project Description
@@ -41,24 +42,32 @@ This code was tested using the following software packages:
 
 Anaconda environment file is available in gbbseq-env.yml
 
+**Note on usearch:** usearch requires a free registration at https://www.drive5.com/usearch/download.html to obtain the binary. Place the `usearch` binary in your PATH before running. The conda environment file installs a compatible version if available via bioconda.
+
 ### 3. Data
 Data consists of sequencing output from the illumina MiSeq platform, sample information, reference database, exprimental coinfection titers, and sample barcodes
 
-1) Sequencing file is available in the Sequence Read Archive (Accession SRX7014890)
+1) Sequencing file is available in the Sequence Read Archive (Accession SRX7014890 / SRR21880043)
 
 2) Information on experimental coinfections is in data/cross_data_runA.csv 
 
-3) Barcode information is in shared/barcodes3.fasta, shared/barcodes3rev.fasta shared/barcodes5.fasta, and shared/barcodes5rev.fasta
+3) Barcode information is in shared/barcodes3.fasta, shared/barcodes3rev.fasta, shared/barcodes5.fasta, and shared/barcodes5rev.fasta
 
 4) Database of reference sequences for the amplicons from influenza viruses used in the experimental coinfections is in shared/reference_database.fasta
 
-5) Titers of experimental coinfection supernatants are in data/supernatant_titers.csv (Not needed to run code)
+5) Locus-specific primer sequences used for amplicon demultiplexing are in shared/segment_specific_primers.fasta and shared/segment_specific_primers_rev.fasta
+
+6) Cross lists specifying which experimental coinfections to process are in shared/cross_list_runA_pairwise.txt and shared/cross_list_runA_control.txt
+
+7) Titers of experimental coinfection supernatants are in data/supernatant_titers.csv (Not needed to run code))
 
 ### 4. Code
 Below are descriptions of the code files used to generate the tables, figures, and statistics in the paper.
 
-1) demultiplexing_infection_conditions.sh: This file is shell script that downloads raw sequencing reads, demultiplexes each read; and generates a flat text summary file used in downstream analyses 
+1) demultiplexing.sh: Shell script that downloads raw sequencing reads from SRA, demultiplexes each read by cross and sample barcode, trims primers, and demultiplexes by locus. Run once for pairwise infections and once for control infections with the appropriate cross list.
 
-2) pairwise_infections.R: This file is an R script that analyzes reassortment in pairwise experimental coinfections among 5 human influenza A virus strains
+2) amplicon_curation_strain_assignment.sh: Shell script that merges paired reads with PEAR, aligns merged amplicons to a cross-specific reference database with usearch, filters non-target loci, and generates a flat text summary file used in downstream R analyses.
 
-3) control_infections.R: This file is an R script that analyzes reassortment in control experimental coinfections to test the methods and the GbBSeq appraoch
+3) control_infections_two_strain_cross2.R: R script that analyzes reassortment in control experimental coinfections (biological replicates and MOI series) to validate the LMGSeq approach.
+
+4) pairwise_infections.R: R script that analyzes reassortment in pairwise experimental coinfections among 5 human influenza A virus strains.

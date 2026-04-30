@@ -7,7 +7,7 @@
 
 #AFTER SENDING DRAFT - Search for this below
 
-#This script conducts analyses on experiments to conduct control infections to test the GbBSeq approach
+#This script conducts analyses on experiments to conduct control infections to test the LMGSeq approach
 
 ## Experiments
 #We conducted several control experiments:
@@ -81,7 +81,7 @@ ggplot(two_strain_database17_98_locus, aes(x = locus, y = sample)) + geom_point(
 no_subtype_processing_plot <- ggplot(two_strain_database17_98_locus, aes(x = locus, y = sample)) + geom_point(aes(col=majority_strain, alpha=proportion_assigned), shape=15, size = 6) + theme(axis.text.x = element_text(angle=90)) + facet_wrap(~ cross)
 
 #Okay, now add the information on what each cross is about
-cross_data_runA <- read.csv("~/Dropbox/mixtup/Documentos/ucdavis/papers/influenza_GbBSeq_human/influenza_GbBSeq/data/cross_data_runA.csv")
+cross_data_runA <- read.csv("data/cross_data_runA.csv")
 
 #Prepare the cross_data_runA df for a merge with the big data set, so we can plot based on infection conditions
 cross_data_runA <- mutate(cross_data_runA, cross = paste("cross", cross_id, sep = ""))

@@ -10,8 +10,10 @@
 #Influenza A virus reassortment is strain dependent
 #Kishana Y. Taylor | Ilechukwu Agu  | Ivy José | Sari Mäntynen | A.J. Campbell | Courtney Mattson |  Tsui-wen Chou | Bin Zhou | David Gresham | Elodie Ghedin |  Samuel L. Díaz Muñoz
 
-#Verify we have 3 arguments
+#Enable error handling (strict)
+set -euo pipefail
 
+#Verify we have 3 command line arguments
 if [ "$#" -ne 3 ]; then
     echo "You must enter exactly 3 command line arguments: run, cross list, and experiment"
     echo "run has format 'runA'"
@@ -26,6 +28,12 @@ echo $1
 echo $2
 echo $3
 
+#Add variable for the data directory
+data_dir="data"
+ 
+#Create data directory if needed
+mkdir -p $data_dir
+
 #Download FASTQ sequencing files from SRA via EBI (Illumnia PE read files)
 wget ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR218/043/SRR21880043/SRR21880043_1.fastq.gz -O data/runA_R1.fastq.gz
 wget ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR218/043/SRR21880043/SRR21880043_2.fastq.gz -O data/runA_R2.fastq.gz
@@ -38,12 +46,18 @@ gunzip data/runA_*.fastq.gz
 # and the third command line argument groups results into a directory (in this case we call this script twice to separate control experiments and pairwise experimental coinfections)
 
 #Change into working directory, which in this case is the base directory where the script resides
-BASEDIR=$(dirname "$0")
+BASEDIR=$(dirname "$(readlink -f "$0")")
 cd $BASEDIR
 
 #Make a directory to hold all the intermediate files etc.
 INTERMED_DIR="$1""_""$3"
 mkdir $INTERMED_DIR
+
+#Does the barcodes file exist?
+if [ ! -f "$BASEDIR/shared/barcodes5.fasta" ]; then
+    echo "ERROR: Required file not found: $BASEDIR/shared/barcodes5.fasta"
+    exit 1
+fi
 
 ## First Copy Barcodes only for relevant crosses 
 cat $2 | grep -f - $BASEDIR/shared/barcodes5.fasta -A1 -w --no-group-separator > $INTERMED_DIR/barcodes5.fasta
@@ -59,7 +73,7 @@ cd $INTERMED_DIR
 
 #First, I'll note that the barcode files have been generated.
 #Now will demultiplex cross and samples.
-cutadapt -g file:barcodes5.fasta -G file:barcodes3rev.fasta -O 8 --no-indels --action=none --discard-untrimmed -o trimmed_{name1}_{name2}_$1_R1.fastq -p trimmed_{name1}_{name2}_$1_R2.fastq ~/GbBSeq_human_IAV/data/$1_R1.fastq ~/GbBSeq_human_IAV/data/$1_R2.fastq > cutadapt_demultiplexing_report.txt
+cutadapt -g file:barcodes5.fasta -G file:barcodes3rev.fasta -O 8 --no-indels --action=none --discard-untrimmed -o trimmed_{name1}_{name2}_$1_R1.fastq -p trimmed_{name1}_{name2}_$1_R2.fastq ../$data_dir/$1_R1.fastq ../$data_dir/$1_R2.fastq > cutadapt_demultiplexing_report.txt
 
 #Checking on the success of this step
 head -n 25 cutadapt_demultiplexing_report.txt

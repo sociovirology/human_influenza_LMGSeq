@@ -1043,7 +1043,7 @@ sample(ca_hk_genotypes$genotype, 1)
 #This loop takes a fixed number of attempts and figures out how many unique genotypes you get
 n <- 1
 simulation_df <- NULL
-
+set.seed(68)
 for (n in 1:1000) {
   uniques <- NULL
   simul_genotypes <- NULL

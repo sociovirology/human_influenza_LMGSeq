@@ -47,7 +47,7 @@ cp $BASEDIR/$2 cross_list.txt
 for cross in `cat cross_list.txt`;
 do
   echo "Making a directory for $cross"
-  mkdir ${cross}/
+  mkdir -p ${cross}/
   
   cross_number=${cross#cross}
   echo "$cross_number"
@@ -81,8 +81,8 @@ do
 cd $BASEDIR/$INTERMED_DIR
 
 #Make directory to hold results
-mkdir ${cross}/usearch
-mkdir ${cross}/usearch/all
+mkdir -p ${cross}/usearch
+mkdir -p ${cross}/usearch/all
 
 #move into cross directory
 cd ${cross}/

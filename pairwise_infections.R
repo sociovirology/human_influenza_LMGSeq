@@ -25,6 +25,7 @@ library(ggplot2)
 library(tidyr)
 library(reshape2)
 library(readr)
+library(grid)
 library(gridExtra)
 library(ggthemes)
 
@@ -440,12 +441,13 @@ nrow(remove_ha)
 #235 goal!!!
 
 #Now let's do a quick sanity check, visually with view
-View(
-  ha_two %>% group_by(cross_sample, locus) %>%
-    summarise(
-      majority_assigned_reads = sum(majority_assigned_reads),
-    ) %>% pivot_wider(names_from = locus, values_from =  majority_assigned_reads) %>% left_join(remove_ha)
-)
+#Commenting out View() so script doesn't crash
+#View(
+#  ha_two %>% group_by(cross_sample, locus) %>%
+#    summarise(
+#      majority_assigned_reads = sum(majority_assigned_reads),
+#    ) %>% pivot_wider(names_from = locus, values_from =  majority_assigned_reads) %>% left_join(remove_ha)
+#)
 #Gosh I love the tidyverse!
 #Looks good enough especially at the extremes
 
@@ -743,7 +745,7 @@ sd(subset(cross_stats, strainA == "PAN99" | strainB == "PAN99", select = prop_re
 
 #HK68
 mean(subset(cross_stats, strainA == "HK68" | strainB == "HK68", select = prop_reassortant, drop = T))
-la#[1] 0.3515625
+#[1] 0.3515625
 sd(subset(cross_stats, strainA == "HK68" | strainB == "HK68", select = prop_reassortant, drop = T))
 #0.3261348
 
@@ -756,7 +758,7 @@ sd(subset(cross_stats, strainA == "CA09" | strainB == "CA09", select = prop_reas
 #Alternative to heatmap, potential new Figure 3A
 #This is just a spreadsheet that lists reassortment frequencies for each strain (note they are "double counted")
 cross_stats_manual <- read.csv("cross_stats_manual.csv")
-View(cross_stats_manual)
+#View(cross_stats_manual)
 ggplot(cross_stats_manual, aes(x = strain, y = prop_reassortant)) + geom_point()
 #This is Figure 4A, and nicely shows how some strains tend to produce higher reassortment frequencies (see SI86 verus CA09 for an extreme visual example) Stats test follows below
 ggplot(cross_stats_manual, aes(x = strain, y = prop_reassortant)) + geom_boxplot() + geom_point(aes(colour = as.factor(prop_reassortant), size = 8)) + scale_color_brewer(palette = 'Set3') + xlab("Strain") + ylab("Proportion of Reassortant Plaque Isolates") + theme(legend.position = "none") + theme_tufte() + theme(text = element_text(size = 20,  family="Helvetica")) + theme(axis.text.x = element_text(size = 12)) + theme(legend.position = "none") + theme(panel.grid.major.y = element_line(color = "lightgray",size = 0.5))
@@ -2095,7 +2097,7 @@ summary(reassortment_genotypes_model)
   )
 
 #CHECK!! #Need to fix the order of names in StrainAB
-View(right_join(supernatant_titers_small, cross_stats))
+#View(right_join(supernatant_titers_small, cross_stats))
 #CHECK!! NOT ALL TITERS AVAILABLE
 ggplot(cross_stats, aes(x = prop_reassortant, y = total_genotypes)) + geom_point(aes(colour = strainAB, size = average_titer)) + geom_smooth(method = "lm") 
 #Statistically different from free reassortment. So parentals still over-represented statistically, but close!
@@ -2294,9 +2296,9 @@ model1 = lm(prop_reassortant ~ X,cross_stats)
 anova(model1)
 
 ### Comand line dump from Daniel
-View(cross_stats)
-View(cross_data_runA)
-View(cross_data_runA)
+#View(cross_stats)
+#View(cross_data_runA)
+#View(cross_data_runA)
 xA = model.matrix(~0+strainA,cross_data_runA)
 xA
 xB = model.matrix(~0+strainB,cross_data_runA)
@@ -2308,7 +2310,7 @@ X
 cross_stats$class = rep(A:D,2)
 cross_stats$class = rep(c('A','B','C','D','E'),2)
 cross_stats
-View(cross_stats)
+#View(cross_stats)
 X = model.matrix(~0+class,cross_stats)
 X
 X2 = X[c(2:10,1),]
@@ -2320,7 +2322,7 @@ anova(lm(prop_reassortant~X3,cross_stats)
 colnames(cross_stats)[5]
 colnames(cross_stats)[5] = 'strainA'
 cross_stats$strainB = cross_stats$strainA[c(2:10,1)]
-View(cross_stats)
+#View(cross_stats)
 xA = model.matrix(~0+strainA,cross_stats)
 xA
 xB = model.matrix(~0+strainB,cross_stats)

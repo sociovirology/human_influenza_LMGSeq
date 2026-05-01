@@ -35,8 +35,14 @@ data_dir="data"
 mkdir -p $data_dir
 
 #Download FASTQ sequencing files from SRA via EBI (Illumnia PE read files)
-wget ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR218/043/SRR21880043/SRR21880043_1.fastq.gz -O data/runA_R1.fastq.gz
-wget ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR218/043/SRR21880043/SRR21880043_2.fastq.gz -O data/runA_R2.fastq.gz
+#Check if files already exist before downloading. They're big!
+if [ ! -f "data/${1}_R1.fastq" ] && [ ! -f "data/${1}_R1.fastq.gz" ]; then
+    wget ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR218/043/SRR21880043/SRR21880043_1.fastq.gz -O data/runA_R1.fastq.gz
+    wget ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR218/043/SRR21880043/SRR21880043_2.fastq.gz -O data/runA_R2.fastq.gz
+    gunzip data/runA_*.fastq.gz
+else
+    echo "FASTQ files already present, skipping download"
+fi
 
 #Unzip files
 gunzip data/runA_*.fastq.gz

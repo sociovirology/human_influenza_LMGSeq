@@ -2294,9 +2294,9 @@ model1 = lm(prop_reassortant ~ X,cross_stats)
 anova(model1)
 
 ### Comand line dump from Daniel
-View(cross_stats)
-View(cross_data_runA)
-View(cross_data_runA)
+#View(cross_stats)
+#View(cross_data_runA)
+#View(cross_data_runA)
 xA = model.matrix(~0+strainA,cross_data_runA)
 xA
 xB = model.matrix(~0+strainB,cross_data_runA)
@@ -2308,7 +2308,7 @@ X
 cross_stats$class = rep(A:D,2)
 cross_stats$class = rep(c('A','B','C','D','E'),2)
 cross_stats
-View(cross_stats)
+#View(cross_stats)
 X = model.matrix(~0+class,cross_stats)
 X
 X2 = X[c(2:10,1),]
@@ -2320,7 +2320,7 @@ anova(lm(prop_reassortant~X3,cross_stats)
 colnames(cross_stats)[5]
 colnames(cross_stats)[5] = 'strainA'
 cross_stats$strainB = cross_stats$strainA[c(2:10,1)]
-View(cross_stats)
+#View(cross_stats)
 xA = model.matrix(~0+strainA,cross_stats)
 xA
 xB = model.matrix(~0+strainB,cross_stats)

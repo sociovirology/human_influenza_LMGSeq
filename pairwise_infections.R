@@ -73,7 +73,7 @@ ggplot(two_strain_database17_98_locus, aes(x = locus, y = sample)) + geom_point(
 no_subtype_processing_plot <- ggplot(two_strain_database17_98_locus, aes(x = locus, y = sample)) + geom_point(aes(col=majority_strain, alpha=proportion_assigned), shape=15, size = 6) + theme(axis.text.x = element_text(angle=90)) + facet_wrap(~ cross)
 
 #Okay, now add the information on what each cross (experimental coinfection) is about. This data sheet is included in the repo. 
-cross_data_runA <- read.csv("~/Dropbox/mixtup/Documentos/ucdavis/papers/influenza_GbBSeq_human/influenza_GbBSeq/data/cross_data_runA.csv")
+cross_data_runA <- read.csv("data/cross_data_runA.csv")
 
 #Prepare the cross_data_runA df for a merge with the big data set, so we can plot based on infection conditions
 cross_data_runA <- mutate(cross_data_runA, cross = paste("cross", cross_id, sep = ""))
@@ -138,10 +138,12 @@ locus_by_cross <- two_strain_database17_98_locus %>% group_by(strainAB, locus) %
   )
 
 #NA (neuraminidase) reads
-View(locus_by_cross[grep("NA", locus_by_cross$locus), ])
+#View(locus_by_cross[grep("NA", locus_by_cross$locus), ])
+#View command commented for scripting session, can use for understanding / troubleshooting
 
 #HA (hemagglutinin) reads
-View(locus_by_cross[grep("HA", locus_by_cross$locus), ])
+#View(locus_by_cross[grep("HA", locus_by_cross$locus), ])
+#View command commented for scripting session, can use for understanding / troubleshooting
 
 ## 2.1 NA Segment  ----
 #Lets check how many samples have any NA segments
@@ -266,12 +268,13 @@ nrow(remove_na)
 #347 goal!!!
 
 #Now let's do a quick sanity check, visually with view
-View(
-  na_two %>% group_by(cross_sample, locus) %>%
-    summarise(
-      majority_assigned_reads = sum(majority_assigned_reads),
-    ) %>% pivot_wider(names_from = locus, values_from =  majority_assigned_reads) %>% left_join(remove_na)
-)
+#View command commented for scripting session, can use for understanding / troubleshooting
+#View(
+#  na_two %>% group_by(cross_sample, locus) %>%
+#    summarise(
+#      majority_assigned_reads = sum(majority_assigned_reads),
+#    ) %>% pivot_wider(names_from = locus, values_from =  majority_assigned_reads) %>% left_join(remove_na)
+#)
 #Gosh I love the tidyverse!
 #Looks good enough especially at the extremes
 
@@ -806,7 +809,7 @@ select(cross_stats, c(prop_reassortant, strainAB))
 
 #Bring up ANOVA analysis, buried below
 #Import matrix with crosses and strains for an ANOVA
-cross_data_runA_matrix <- read.csv("~/Dropbox/mixtup/Documentos/ucdavis/papers/influenza_GbBSeq_human/influenza_GbBSeq/data/cross_data_runA_matrix.csv")
+cross_data_runA_matrix <- read.csv("data/cross_data_runA_matrix.csv")
 
 cross_matrix <- as.matrix(cross_data_runA_matrix[2:6])
 
@@ -934,7 +937,7 @@ sd(intersubtype$prop_reassortant)
 #[1] 0.2480319
 
 #Now lets look at genetic similarity, pairwise genetic identity (PID)
-pairwise_genetic_identity <- read.csv("~/Dropbox/mixtup/Documentos/ucdavis/papers/influenza_GbBSeq_human/influenza_GbBSeq/data/pairwise_genetic_identity.csv", na.strings="")
+pairwise_genetic_identity <- read.csv("data/pairwise_genetic_identity.csv", na.strings="")
 
 #Make a strainAB column
 pairwise_genetic_identity <- unite(pairwise_genetic_identity, strainAB, c("strainB", "strainA",), sep = "_", remove = F)
@@ -1935,10 +1938,8 @@ summary(reassortment_pairwise_model)
 
 
 #### 3. Coinfection Supernatant Titers ####
-#AFTER SENDING DRAFT - This analysis is in Excel right now, need to move here
-
-#Import file: NEED TO PUT RAW COUNTS IN HERE! USE PHAGE REPO AS TEMPLATE FOR CALCULATION
-supernatant_titers <- read.csv("~/Dropbox/mixtup/Documentos/ucdavis/papers/influenza_GbBSeq_human/influenza_GbBSeq/data/supernatant_titers.csv")
+#Import data on experimental coinfection supernatant titers file
+supernatant_titers <- read.csv("data/supernatant_titers.csv")
 
 #Plot raw titers
 ggplot(supernatant_titers, aes(x = reorder(cross, titer), y = titer)) + geom_col() 
@@ -2219,11 +2220,11 @@ simulation_df %>% filter(unique_genotypes == 256) %>% group_by(unique_genotypes)
 #<dbl>            <dbl>       <dbl>        <dbl>      <dbl>    <int>
 #256               942        2716         1562       311.      1000
 
-write.csv(genotypes_table, file = "/Users/mixtup/Dropbox/mixtup/Documentos/ucdavis/papers/influenza_GbBSeq_human/influenza_GbBSeq/outputs/genotypes_table.csv")
+write.csv(genotypes_table, file = "outputs/genotypes_table.csv")
 
 #Some manual editing in Excel to make GenAlEx format file
 #library("poppr")
-pairwise_reassortment <- read.genalex("/Users/mixtup/Dropbox/mixtup/Documentos/ucdavis/papers/influenza_GbBSeq_human/influenza_GbBSeq/outputs/genotypes_table.csv")
+pairwise_reassortment <- read.genalex("outputs/genotypes_table.csv")
 pairwise_reassortment
 
 #Never got the software to work, so just going to input here

@@ -19,6 +19,8 @@ dependencies:
   - r-gridextra
   - r-ggthemes
   - r-argparse
+  - r-gtools
+  - r-scales
   
   # Python for any potential scripting
   - python=3.7

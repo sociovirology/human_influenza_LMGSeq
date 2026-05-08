@@ -38,7 +38,7 @@ This code was tested using the following software packages:
 * PEAR (0.9.6)
 * usearch (8.1.1861)
 * R (3.6.3 (2020-02-29) -- "Holding the Windsock") with packages:
-    + dplyr, ggplot2, tidyr, reshape2, readr, gridExtra, ggthemes
+    + dplyr, ggplot2, tidyr, reshape2, readr, gridExtra, ggthemes, gtools, scales
 
 Anaconda environment file is available in gbbseq-env.yml
 

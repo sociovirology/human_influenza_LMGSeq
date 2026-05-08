@@ -28,6 +28,8 @@ library(readr)
 library(grid)
 library(gridExtra)
 library(ggthemes)
+library(gtools)
+library(scales)
 
 # 1. Importing Data and Initial Preparation of Data Frame ----
 
@@ -863,8 +865,6 @@ model5_coef_rtable <- tableGrob(round(model5_coef, digits=3))
 grid.newpage()
 grid.draw(model5_coef_rtable)
 
-grid.arrange(model5_coef)
-
 #Now lets look at H1N1 vs H3N2
 #Plot by subtype
 ggplot(controls_df, aes(x = subtype, y = prop_reassortant)) + geom_point() + geom_boxplot(alpha = 0.25) 
@@ -916,7 +916,8 @@ summary.lm(aov(prop_reassortant ~ same_subtype, controls_df))
 intrasubtype <- as.vector(unique(subset(controls_df, same_subtype == "Y", select = "prop_reassortant")))
 intersubtype <- as.vector(unique(subset(controls_df, same_subtype == "N", select = "prop_reassortant")))
 
-t.test(intrasubtype, intersubtype)
+#Make sure  it's a vector and  numeric
+t.test(as.numeric(unlist(intrasubtype)), as.numeric(unlist(intersubtype)))
 #Welch Two Sample t-test
 
 #data:  intrasubtype and intersubtype
@@ -1036,24 +1037,6 @@ summary(reassortment_pid_model_no_antigenic)
 
 #No significant relationship, either!
 
-#Finally lets look at other measures of reassortment
-#Now let's test for correlation between PID and proportion unique genotypes
-ggplot(cross_stats, aes(x = proportion_unique_genotypes, y = average_pid)) + geom_point(aes(colour = strainAB)) + geom_smooth(method = "lm") 
-unique_genotypes_pid <- lm(proportion_unique_genotypes ~ average_pid, cross_stats)
-summary(unique_genotypes_pid)
-#Multiple R-squared:  0.1165,	Adjusted R-squared:  0.00603 
-#F-statistic: 1.055 on 1 and 8 DF,  p-value: 0.3345
-
-#Not surprising as reassortment rate and unique genotypes are correlated
-
-#Now let's test for correlation between PID and pairwise_heterologous_mean_frequency
-ggplot(cross_stats, aes(x = pairwise_heterologous_mean_frequency, y = average_pid)) + geom_point(aes(colour = strainAB)) + geom_smooth(method = "lm") 
-pairwise_heterologous_mean_frequency_pid <- lm(pairwise_heterologous_mean_frequency ~ average_pid, cross_stats)
-summary(pairwise_heterologous_mean_frequency_pid)
-#Multiple R-squared:  0.1561,	Adjusted R-squared:  0.05056 
-#F-statistic: 1.479 on 1 and 8 DF,  p-value: 0.2586
-
-#Also uncorrelated!
 
 #Now let's look at the segments involved in reasortment
 
@@ -1090,7 +1073,7 @@ ggplot(locus_strain_reassortants_only, aes(x = factor(locus, level = c('PB2f', '
 #Putting in one row
 ggplot(locus_strain, aes(x = locus, y = total_samples, fill = majority_strain)) + geom_col(position = "fill") + facet_wrap(~cross, nrow = 1) + geom_hline(yintercept = 0.50)
 
-#
+#Putting in.one column
 ggplot(locus_strain, aes(x = locus, y = total_samples, fill = majority_strain)) + geom_col(position = "fill") + coord_flip() + facet_wrap(~cross, ncol = 1) + geom_hline(yintercept = 0.50)
 
 #Segments involved in reassortment
@@ -1521,33 +1504,6 @@ ggplot(ld_df, aes(reorder(locus_pair, sample_by_strain), sample_by_strain)) + ge
 #Ok, how do we scale this up so we can get LD values for each segment pair in each cross
 #Make a second loop over that will go over the  
 
-#Test loop
-for (c in 1:nrow(cross_stats)) {
-  print(cross_stats$cross[c])
-  print(cross_stats$strainA[c])
-}
-
-ld_df <- NULL
-d_list <- NULL
-for (c in 1:nrow(cross_stats)) {
-  print(cross_stats$cross[c])
-  print(as.character(cross_stats$strainA[c]))
-  #Run for loop
-    for (i in 1:nrow(loci_pairings)) {
-      #print(unlist(loci_pairings[i, ], use.names=FALSE))
-      d_list <- linkage_disequilibrium(locus_strain_full, cross_stats$cross[c], unlist(loci_pairings[i, ], use.names=FALSE), as.character(cross_stats$strainA[c]))
-      #print(loci_pairings[i, ])
-      #print(d_list)
-      #print(cbind(loci_pairings[i, ], d_list))
-      #ld_df <- cbind(loci_pairings[i, ], d_list)
-      ld_df <- rbind(ld_df, cbind(loci_pairings[i, ], d_list, cross_stats$cross[c]))
-      print(ld_df)
-    }
-}
-
-#START HERE: Aug 26, 2022
-#Could just make each one individually (just ten) and then join them.... 
-#Quicker probably
 
 #I have evidence of a biased association through stats, now I want to know what that association is (which strain)
 #Start with PB2f and PB1c, wanto to figure out how many samples are CA09, HK68, or mixed
@@ -1952,9 +1908,9 @@ supernatant_titers <- filter(supernatant_titers, strainA != "Chile83") %>% filte
 #Plot raw titers again
 ggplot(supernatant_titers, aes(x = reorder(cross, titer), y = titer)) + geom_col() + scale_y_continuous(labels = function(x) format(x, scientific = TRUE))
 
+library(scales)
 ggplot(supernatant_titers, aes(x = reorder(cross, titer), y = titer)) + geom_col() + scale_y_continuous(labels = scientific, breaks=seq(0, 10, 1))
 
-library(scales)
 ggplot(supernatant_titers, aes(x = reorder(cross, titer), y = titer)) + geom_col() + scale_y_log10()
 
 #Heatmap
@@ -2085,20 +2041,40 @@ summary(reassortment_genotypes_model)
 #Multiple R-squared:  0.8366,	Adjusted R-squared:  0.8162 
 #F-statistic: 40.96 on 1 and 8 DF,  p-value: 0.0002092
 
+#Coming back to correlation of PID and reasortment, but using other measures of reassortment
+#Finally lets look at other measures of reassortment
+#Now let's test for correlation between PID and proportion unique genotypes
+ggplot(cross_stats, aes(x = proportion_unique_genotypes, y = average_pid)) + geom_point(aes(colour = strainAB)) + geom_smooth(method = "lm") 
+unique_genotypes_pid <- lm(proportion_unique_genotypes ~ average_pid, cross_stats)
+summary(unique_genotypes_pid)
+#Multiple R-squared:  0.1165,	Adjusted R-squared:  0.00603 
+#F-statistic: 1.055 on 1 and 8 DF,  p-value: 0.3345
+
+#Not surprising as reassortment rate and unique genotypes are correlated
+
+#Now let's test for correlation between PID and pairwise_heterologous_mean_frequency
+ggplot(cross_stats, aes(x = pairwise_heterologous_mean_frequency, y = average_pid)) + geom_point(aes(colour = strainAB)) + geom_smooth(method = "lm") 
+pairwise_heterologous_mean_frequency_pid <- lm(pairwise_heterologous_mean_frequency ~ average_pid, cross_stats)
+summary(pairwise_heterologous_mean_frequency_pid)
+#Multiple R-squared:  0.1561,	Adjusted R-squared:  0.05056 
+#F-statistic: 1.479 on 1 and 8 DF,  p-value: 0.2586
+
+#Also uncorrelated!
+
+
 
 #Can we come up with a risk assesement measure? Based on three criteria (reassortment, genotypes, productivity)
 
 #Let's bring in supernatant titers into the cross_stats data frame
-#supernatant_titers <- unite(supernatant_titers, strainAB, c("strainA", "strainB"))
+supernatant_titers <- unite(supernatant_titers, strainAB, c("strainA", "strainB"))
 
-#supernatant_titers_small <- group_by(supernatant_titers, strainAB) %>%
+supernatant_titers_small <- group_by(supernatant_titers, strainAB) %>%
   summarise(
     average_titer = mean(titer)
   )
 
-#CHECK!! #Need to fix the order of names in StrainAB
-#View(right_join(supernatant_titers_small, cross_stats))
-#CHECK!! NOT ALL TITERS AVAILABLE
+cross_stats <- right_join(supernatant_titers_small, cross_stats)
+#NOT ALL TITERS AVAILABLE
 ggplot(cross_stats, aes(x = prop_reassortant, y = total_genotypes)) + geom_point(aes(colour = strainAB, size = average_titer)) + geom_smooth(method = "lm") 
 #Statistically different from free reassortment. So parentals still over-represented statistically, but close!
 #Maybe let's add threshold to the reassortment graph (see Line 264)
@@ -2223,273 +2199,3 @@ simulation_df %>% filter(unique_genotypes == 256) %>% group_by(unique_genotypes)
 #256               942        2716         1562       311.      1000
 
 write.csv(genotypes_table, file = "outputs/genotypes_table.csv")
-
-#Some manual editing in Excel to make GenAlEx format file
-#library("poppr")
-pairwise_reassortment <- read.genalex("outputs/genotypes_table.csv")
-pairwise_reassortment
-
-#Never got the software to work, so just going to input here
-
-
-#### 5. Testing Strain Specificity ####
-
-#Import matrix with crosses and strains for an ANOVA
-#cross_data_runA_matrix <- 
-cross_data_runA_matrix <- read.csv("~/Dropbox/mixtup/Documentos/ucdavis/papers/influenza_GbBSeq_human/influenza_GbBSeq/data/cross_data_runA_matrix.csv")
-
-cross_matrix <- as.matrix(cross_data_runA_matrix[2:6])
-
-#Now add strain information to cross_stats
-cross_stats <- right_join(cross_stats, unique(subset(controls_df, select = c(cross, strainA, strainB))))
-
-table(cross_stats$strainA, cross_stats$prop_reassortant)
-
-model5 = lm(prop_reassortant ~ cross_matrix, cross_stats)
-
-#What about 
-model15 <- lm(reassortants ~ cross_matrix, cross_stats)
-
-#Make a point plot with reasosrtment rates for each strain 
-cross_stats$prop_reassortant*cross_matrix
-#Works, but they are not in the right order!!
-
-cross_stats_ordered <- arrange(cross_stats, cross)
-cross_stats_ordered$prop_reassortant
-
-cross_data_runA_matrix_ordered <- arrange(cross_data_runA_matrix, cross)
-
-cross_matrix_ordered <- as.matrix(cross_data_runA_matrix_ordered[2:6])
-
-strain_individual_reassortment <- cross_stats_ordered$prop_reassortant*cross_matrix_ordered
-
-ggplot(strain_individual_reassortment, aes(x = strainA, y = strainB, fill= titer)) + geom_tile() + geom_text(aes(label = round(titer, 4))) + scale_fill_gradient(low = "white", high = "red") 
-
-model6 = lm(prop_reassortant ~ cross_matrix_ordered, cross_stats_ordered)
-summary(model6)
-#Call:
-#  lm(formula = prop_reassortant ~ cross_matrix_ordered, data = cross_stats_ordered)
-
-#Residuals:
-#  1        2        3        4        5        6        7        8        9       10 
-#-0.11285 -0.20660  0.24826  0.01910  0.07465 -0.02604 -0.11632  0.29688 -0.10938 -0.06771 
-
-#Coefficients: (1 not defined because of singularities)
-#Estimate Std. Error t value Pr(>|t|)
-#(Intercept)                0.23785    0.23757   1.001    0.363
-#cross_matrix_orderedCA09   0.25347    0.17958   1.411    0.217
-#cross_matrix_orderedHK68   0.05208    0.17958   0.290    0.783
-#cross_matrix_orderedPAN99  0.19444    0.17958   1.083    0.328
-#cross_matrix_orderedSI86   0.36111    0.17958   2.011    0.101
-#cross_matrix_orderedTX12        NA         NA      NA       NA
-
-#Residual standard error: 0.2199 on 5 degrees of freedom
-#Multiple R-squared:  0.5186,	Adjusted R-squared:  0.1335 
-#F-statistic: 1.347 on 4 and 5 DF,  p-value: 0.3692
-
-coef(model6)
-
-#### Daniel Runcie Meeting Dec 8 2021
-
-#Key for model, where X is matrix on board that is *not* a column name in the data frame
-model1 = lm(prop_reassortant ~ X,cross_stats)
-anova(model1)
-
-### Comand line dump from Daniel
-#View(cross_stats)
-#View(cross_data_runA)
-#View(cross_data_runA)
-xA = model.matrix(~0+strainA,cross_data_runA)
-xA
-xB = model.matrix(~0+strainB,cross_data_runA)
-xB
-colnames(xA)
-colnames(xB)
-X = xA
-X
-cross_stats$class = rep(A:D,2)
-cross_stats$class = rep(c('A','B','C','D','E'),2)
-cross_stats
-#View(cross_stats)
-X = model.matrix(~0+class,cross_stats)
-X
-X2 = X[c(2:10,1),]
-X2
-X3 = X+X2
-X3
-anova(lm(prop_reassortant~X3,cross_stats)
-)
-colnames(cross_stats)[5]
-colnames(cross_stats)[5] = 'strainA'
-cross_stats$strainB = cross_stats$strainA[c(2:10,1)]
-#View(cross_stats)
-xA = model.matrix(~0+strainA,cross_stats)
-xA
-xB = model.matrix(~0+strainB,cross_stats)
-X = xA+xB
-X
-model = lm(prop_reassortant ~ X,cross_stats)
-model.matrix(model)
-summary(model)
-model = lm(prop_reassortant ~ X-1,cross_stats)
-summary(model)
-model.matrix(model)
-model2 = lm(prop_reassortant ~ X-1,cross_stats)
-model1 = lm(prop_reassortant ~ X,cross_stats)
-coef(model2)
-coef(model1)
-coef(model1) + coef(model1)[1]
-coef(model2)*2
-coef(model2)-coef(model2)[1]
-model.matrix(model)
-model.matrix(model2)
-rowSums(model.matrix(model2))
-fitted(model2)
-fitted(model1)
-coef(model2)
-model.matrix(model2)
-coef(model1)
-coef(model2)
-coef(model1)*2+coef(model1)[1]
-coef(model2)*2
-summary(model1)
-anova(model1)
-anova(model2)
-anova(model1)
-model1 = lm(prop_reassortant ~ X,cross_stats)
-model1 = lm(prop_reassortant ~ X,cross_stats)
-anova(model1)
-
-
-
-
-
-uniques <- 1
-simul_genotypes <- NULL
-tries <- NULL
-while(uniques < 256) {
-print(uniques)
-tries <- rbind(tries, uniques)
-simul_genotypes <- rbind(simul_genotypes, rbinom(8, 1,.5))
-nrow(simul_genotypes)
-uniques <- nrow(unique(simul_genotypes))
-}
-nrow(simul_genotypes)
-plot(tries)
-
-####### SLATED FOR DELETION #######
-#What about 
-model15 <- lm(reassortants ~ cross_matrix, cross_stats)
-
-#Make a point plot with reasosrtment rates for each strain 
-cross_stats$prop_reassortant*cross_matrix
-#Works, but they are not in the right order!!
-
-cross_stats_ordered <- arrange(cross_stats, cross)
-cross_stats_ordered$prop_reassortant
-
-cross_data_runA_matrix_ordered <- arrange(cross_data_runA_matrix, cross)
-
-cross_matrix_ordered <- as.matrix(cross_data_runA_matrix_ordered[2:6])
-
-strain_individual_reassortment <- cross_stats_ordered$prop_reassortant*cross_matrix_ordered
-
-model6 = lm(prop_reassortant ~ cross_matrix_ordered, cross_stats_ordered)
-summary(model6)
-#Call:
-#  lm(formula = prop_reassortant ~ cross_matrix_ordered, data = cross_stats_ordered)
-
-#Residuals:
-#  1        2        3        4        5        6        7        8        9       10 
-#-0.11285 -0.20660  0.24826  0.01910  0.07465 -0.02604 -0.11632  0.29688 -0.10938 -0.06771 
-
-#Coefficients: (1 not defined because of singularities)
-#Estimate Std. Error t value Pr(>|t|)
-#(Intercept)                0.23785    0.23757   1.001    0.363
-#cross_matrix_orderedCA09   0.25347    0.17958   1.411    0.217
-#cross_matrix_orderedHK68   0.05208    0.17958   0.290    0.783
-#cross_matrix_orderedPAN99  0.19444    0.17958   1.083    0.328
-#cross_matrix_orderedSI86   0.36111    0.17958   2.011    0.101
-#cross_matrix_orderedTX12        NA         NA      NA       NA
-
-#Residual standard error: 0.2199 on 5 degrees of freedom
-#Multiple R-squared:  0.5186,	Adjusted R-squared:  0.1335 
-#F-statistic: 1.347 on 4 and 5 DF,  p-value: 0.3692
-coef(model6)
-####### SLATED FOR DELETION #######
-
-
-################################# CHECK APRIL 4 - BUT POTENTIALLY DELETE ###############################
-#Now need some stats from these
-locus_strain_cross <- group_by(locus_strain, cross, locus) %>%
-  summarise(
-    top_samples_cross = max(total_samples),
-    total_samples_cross = sum(total_samples),
-    proportion = max(total_samples)/sum(total_samples)
-  )
-
-#Let's try stats just on the raw number, but subset to loci with more than 50 total
-summary.lm(aov(proportion ~ locus, locus_strain_cross))
-
-#Get top proprtion
-#bias_cross_locus <- group_by(locus_strain_cross, cross, locus) %>%
-#  summarise(
-#    top_proportion = max(proportion),
-#  )
-
-#Graph
-ggplot(locus_strain_cross, aes(x = locus, y = proportion)) + geom_point(aes(colour = cross)) + geom_boxplot(alpha = 0.25) + geom_hline(yintercept = 0.50)
-
-#Stats add 
-bias_locus <- group_by(locus_strain_cross, locus) %>%
-  summarise(
-    mean_proportion = mean(proportion),
-    sd_proportion = sd(proportion)
-  )
-
-#Add to big DF
-locus_strain_cross <- right_join(bias_locus, locus_strain_cross)
-
-#Proportions
-ggplot(locus_strain_cross, aes(x = reorder(locus, mean_proportion), y = proportion)) + geom_point()
-
-#Means only
-ggplot(locus_strain_cross, aes(x = reorder(locus, mean_proportion), y = mean_proportion)) + geom_point()
-
-#
-summary.lm(aov(proportion ~ locus, locus_strain_cross))
-#Call:
-#  aov(formula = proportion ~ locus, data = locus_strain_cross)
-
-#Residuals:
-#  Min       1Q   Median       3Q      Max 
-#-0.34518 -0.12016  0.00415  0.13074  0.22700 
-
-#Coefficients:
-#  Estimate Std. Error t value Pr(>|t|)    
-#(Intercept)  0.81377    0.04137  19.672   <2e-16 ***
-#locusMg      0.03142    0.05850   0.537    0.592    
-#locusNA     -0.02956    0.05850  -0.505    0.614    
-#locusNPd     0.04379    0.05850   0.748    0.456    
-#locusNS1d   -0.01578    0.05850  -0.270    0.788    
-#locusPAc    -0.04077    0.05850  -0.697    0.487    
-#locusPB1c    0.03537    0.05850   0.605    0.547    
-#locusPB2f    0.04107    0.05962   0.689    0.492    
-#---
-#  Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
-
-#Residual standard error: 0.1548 on 103 degrees of freedom
-#Multiple R-squared:  0.04348,	Adjusted R-squared:  -0.02153 
-#F-statistic: 0.6689 on 7 and 103 DF,  p-value: 0.6979
-
-#Proportion against cross
-summary.lm(aov(proportion ~ cross, locus_strain_cross))
-#Residual standard error: 0.1285 on 97 degrees of freedom
-#Multiple R-squared:  0.3791,	Adjusted R-squared:  0.2959 
-#F-statistic: 4.556 on 13 and 97 DF,  p-value: 4.938e-06
-
-#Graph to show this:
-ggplot(locus_strain_cross, aes(x = cross, y = proportion)) + geom_point(aes(colour = locus)) + geom_boxplot(alpha = 0.25)
-#Reorder
-
-################################# CHECK APRIL 4 - BUT POTENTIALLY DELETE ###############################

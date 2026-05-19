@@ -1,11 +1,15 @@
 #!/bin/bash
 
-#Amplicon Curation and Strain Assignment Script  - CURRENT AS OF Nov 17, 2021
+#Amplicon Curation and Strain Assignment Script for Influenza LMGeq
+# Script: amplicon_curation_strain_assignment.sh
+# This file is shell script that merges reads, makes custom databases for each cross, and assings each read using usearch, finally generating files to be analyzed in R
+# Requires three arguments that should be passed from the command line:
+#    run information, cross information, and experiment folders
 
-#So now need to run merging and other amplicon curation, then strain assignment
-#Instead of doing QC filtering of specific loci according to controls, going to use database only with relevant strains
+#This script is part of the following manuscript:
+#Influenza A virus reassortment is strain dependent
+#Kishana Y. Taylor | Ilechukwu Agu  | Ivy José | Sari Mäntynen | A.J. Campbell | Courtney Mattson |  Tsui-wen Chou | Bin Zhou | David Gresham | Elodie Ghedin |  Samuel L. Díaz Muñoz
 
-#Now hardcoded for each run, but will loop across specified crosses (initally just runB_cross11 as a test)
 
 #Enable error handling (strict)
 set -euo pipefail
@@ -72,7 +76,7 @@ echo "Custom Databases for each cross done. PEAR R1 and R2 merging done"
 echo "Now moving to matching amplicons to our custom databases with usearch, and then tallying matches to asign strains"
 
 #Now do the usearch'ing - HERE AS OF NOV 19, 2021 3:20pm
-
+ 
 cd $BASEDIR/$INTERMED_DIR
 
 for cross in `cat cross_list.txt`;
@@ -154,6 +158,3 @@ pwd
 #End the cross loop
 done
 echo "Amplicon processing and strain assignment done!"
-
-
-

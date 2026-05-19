@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Demultiplexing Script for Influenza GbBSeq
+# Demultiplexing Script for Influenza LMGSeq
 # Script: demultiplexing.sh
 # This file is shell script that downloads and processes raw sequencing reads
 # Requires three arguments that should be passed from the command line:

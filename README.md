@@ -9,7 +9,7 @@ If you are reading or using this, let us know how these data were useful for you
 
 ### Quick Start
 1. Make sure packages are installed (see #2 below) or use gbbseq-env.yml to set up Anaconda environment:
-   `conda env create -f gbbseq-env.yml && conda activate gbbseq`
+   `conda env create -f lmgseq-env.yml && conda activate lmgseq`
 2. `git clone https://github.com/sociovirology/human_influenza_LMGSeq.git`
 3. `chmod +x demultiplexing.sh amplicon_curation_strain_assignment.sh`
 4. `./demultiplexing.sh runA "shared/cross_list_runA_pairwise.txt" pairwise_infections` (pairwise)
@@ -40,7 +40,7 @@ This code was tested using the following software packages:
 * R (3.6.3 (2020-02-29) -- "Holding the Windsock") with packages:
     + dplyr, ggplot2, tidyr, reshape2, readr, gridExtra, ggthemes, gtools, scales
 
-Anaconda environment file is available in gbbseq-env.yml
+Anaconda environment file is available in lmgseq-env.yml
 
 **Note on usearch:** usearch requires a free registration at https://www.drive5.com/usearch/download.html to obtain the binary. Place the `usearch` binary in your PATH before running. The conda environment file installs a compatible version if available via bioconda.
 
@@ -59,7 +59,9 @@ Data consists of sequencing output from the illumina MiSeq platform, sample info
 
 6) Cross lists specifying which experimental coinfections to process are in shared/cross_list_runA_pairwise.txt and shared/cross_list_runA_control.txt
 
-7) Titers of experimental coinfection supernatants are in data/supernatant_titers.csv (Not needed to run code))
+7) Reassortment frequencies for each strain, used to make heatmap more easily, are in data/cross_stats_manual.csv
+
+8) Titers of experimental coinfection supernatants are in data/supernatant_titers.csv (Not needed to run code)
 
 ### 4. Code
 Below are descriptions of the code files used to generate the tables, figures, and statistics in the paper.

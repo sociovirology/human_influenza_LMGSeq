@@ -1,32 +1,33 @@
 ################ Control Experiment Infections  ################
 #### 1. Data Sources and Preparing Data
-#### 2. 
-#### 3. Coinfection Supernatant Titers
-#### 4. Population Genetic Statistics
-#### 5. Testing Strain Specificity
+#### 2. Antigenic Segment Processing
+#### 3. Basic Reassortment Plots
+#### 4. Calculation of Reassortment Rates, using 8 segment
+#### 5. Figures Plotting Reasortment Proportions and Replicate Deviation Data 
 
-#AFTER SENDING DRAFT - Search for this below
+# Pairwise coinfection analyses Script for Influenza LMGSeq
+# Script: pairwise_coinfections.R
+# This file is an R script that conducts analyses on experiments to conduct control infections to test the LMGSeq approach
+# Requires running demultiplexing.sh and amplicon_curation_strain_assignment.sh to generate output files for *control coinfections*:
+#   ./demultiplexing.sh runA "shared/cross_list_runA_control.txt" control_infections
+#   ./amplicon_curation_strain_assignment.sh runA "shared/cross_list_runA_control.txt" control_infections
 
-#This script conducts analyses on experiments to conduct control infections to test the LMGSeq approach
+#This script is part of the following manuscript:
+#Influenza A virus reassortment is strain dependent
+#Kishana Y. Taylor | Ilechukwu Agu  | Ivy José | Sari Mäntynen | A.J. Campbell | Courtney Mattson |  Tsui-wen Chou | Bin Zhou | David Gresham | Elodie Ghedin |  Samuel L. Díaz Muñoz
 
 ## Experiments
 #We conducted several control experiments:
-#  1. Biological replicates of HK68/CA09, HK68/PAN99, 
+#1. Biological replicates of HK68/CA09, HK68/PAN99, and CA09/PAN99 
 #-HK68/CA09: Run A Cross 2 and 4
 #-HK68/PAN99: Run A Cross 3 and 5
 #-CA09/PAN99: Run A Cross 11, 13, and 17
 
-#2. Varying MOI of HK/CA09 (these strains are plaque purified)
+#2. Varying MOI of HK/CA09
 #-Run A Cross 2 MOI = 10
 #-Run A Cross 10 MOI = 0.01
 #-Run A Cross 6 MOI = 1
 
-
-#To Do April 7, 2022 START HERE
-# 1. Reassortment plots 
-# 2. Stat tests on these plots (prop tests on plots, exponential fit on MOI plot)
-# 3. Down-sampling unique genotypes on replicate plots
-# 4. **Note missing cross 15 file from Crick** 
 
 #Load libraries
 library(dplyr)
@@ -143,7 +144,12 @@ sd(reads_locus$average_locus_reads)
 #For now, just going to take any HA1b or NA1c as evidence that HA should be the one
 
 #Need to make this into a function:
-#################### New Antigenic Segment Processing - Refer ha_na.Rmd ####################
+
+## 2. Antigenic Segment Processing ----
+# This section uses information from each of two PCR loci (HA3a, HA1b, NA1c, NA3a) for each antigenic segment (HA and NA)
+# to decide which strain to assign to that given segment in each progeny isolate clone (sample).
+# Aside from using read data, we also used information from control LMGSeq runs (including single strain LMGSeq to establish thresholds for how  primers work behave with just one strain background)
+
 #Total Rows in DF
 nrow(two_strain_database17_98_locus)
 #[1] 6503
@@ -160,7 +166,7 @@ View(locus_by_cross[grep("NA", locus_by_cross$locus), ])
 #HA's
 View(locus_by_cross[grep("HA", locus_by_cross$locus), ])
 
-##### First NA #####
+## 2.1 NA Segment  ----
 #Lets check how many samples have any NA segments
 nrow(two_strain_database17_98_locus[grep("NA", two_strain_database17_98_locus$locus), ])
 #[1] 1193
@@ -325,11 +331,10 @@ filter(two_strain_database17_98_locus, locus == "NA3a" | locus == "NA1c") %>%
 #Now rename all the NA loci
 two_strain_database17_98_locus$locus[grep("NA", two_strain_database17_98_locus$locus)] <- "NA"
 #DONE!!!!! 
+## End NA
 
-##### End NA #####
 
-
-##### Second HA #####
+#### 2.2 HA Segment  ---- 
 #Lets check how many samples have any HA segments
 nrow(two_strain_database17_98_locus[grep("HA", two_strain_database17_98_locus$locus), ])
 #[1] 843
@@ -497,11 +502,9 @@ filter(two_strain_database17_98_locus, locus == "HA3a" | locus == "HA1b") %>%
 
 #Now rename all the HA loci
 two_strain_database17_98_locus$locus[grep("HA", two_strain_database17_98_locus$locus)] <- "HA"
+# End HA ##
 
-
-##### End HA #####
-
-
+#### 3. Basic Reassortment Plots ####
 #Now should be able to generate the plots for each of the conditions
 #First, replicate of standard (using crosess to subset because it's a bit complicated)
 ggplot(subset(two_strain_database17_98_locus, cross == "cross2" | cross == "cross4" | cross == "cross3" | cross == "cross5" | cross == "cross13" | cross == "cross17"), aes(x = locus, y = sample)) + geom_point(aes(col=majority_strain, alpha=proportion_assigned), shape=15, size = 6) + theme(axis.text.x = element_text(angle=90)) + facet_wrap(strainAB ~ cross, nrow = 3)
@@ -521,19 +524,6 @@ ggplot(subset(two_strain_database17_98_locus, cross == "cross4" | cross == "cros
 ggplot(two_strain_database17_98_locus, aes(x = locus, y = sample)) + geom_point(aes(col=majority_strain, alpha=proportion_assigned), shape=15, size = 6) + theme(axis.text.x = element_text(angle=90)) + facet_wrap(~ cross)
 
 controls_df <- two_strain_database17_98_locus
-
-## Remove PB1 ##
-nrow(controls_df)
-#6120
-
-nrow(filter(controls_df, locus != "PB1c"))
-#5706
-#Should not affect number of samples/clones
-
-#Execute 
-controls_df <- filter(controls_df, locus != "PB1c")
-
-## Remove PB1 ##
 
 #First need to get the number of typed loci for each sample
 controls_df_loci_numbers <- controls_df %>% 
@@ -568,7 +558,7 @@ ggplot(subset(controls_df, cross == "cross4" | cross == "cross10" | cross == "cr
 #-Run A Cross 10 MOI = 0.01
 #-Run A Cross 6 MOI = 1
 
-######### Using 8 segments  ##############
+#### 4. Calculation of Reassortment Rates, using 8 segments ####
 #Now let's generate some numbers!
 parentals <- subset(controls_df, total_segments > 7) %>% 
   group_by(cross_sample, cross, sample) %>% 
@@ -613,7 +603,7 @@ cross_stats <- mutate(cross_stats, prop_reassortant = reassortants / clones)
 #Now add cross data
 cross_stats <- left_join(cross_stats, cross_data_runA, by = "cross")
 
-#Plot reasortment proportions
+#### 5. Figures Plotting Reasortment Proportions and Replicate Deviation Data ####
 #First, replicate of standard (using crosess to subset because it's a bit complicated)
 #Figure 1A
 ggplot(subset(cross_stats, cross == "cross2" | cross == "cross4" | cross == "cross3" | cross == "cross5" | cross == "cross11" | cross == "cross13" | cross == "cross17"), aes(x = strainAB, y = prop_reassortant)) + xlab("Experimental Coinfection: Strain Combination") + ylab("Proportion of Reassortant Plaque Isolates") + geom_point(size = 3) + theme_tufte() + theme(text = element_text(size = 20,  family="Helvetica")) + theme(axis.text.x = element_text(size = 12)) + theme(legend.position = "none") + theme(panel.grid.major.y = element_line(color = "lightgray",size = 0.5)) 
@@ -639,465 +629,3 @@ mean(c(0.1143, 0.062, 0.094, 0.032, 0.01))
 #Figure 1B
 #Second by MOI
 ggplot(subset(cross_stats, cross == "cross10" | cross == "cross6" | cross == "cross4"), aes(x = moi, y = prop_reassortant)) + xlab("Multiplicity of Infection") + ylab("Proportion of Reassortant Plaque Isolates") + scale_x_log10() + geom_point(size = 3) + geom_smooth(method = "lm", formula = y ~ exp(x), se = T) + theme_tufte() + theme(text = element_text(size = 20,  family="Helvetica")) + theme(axis.text.x = element_text(size = 12)) + theme(legend.position = "none") + theme(panel.grid.major.y = element_line(color = "lightgray",size = 0.5)) 
-
-
-######### Using 8 segments  ##############
-
-
-######### Using 7 segments  ##############
-#Now let's generate some numbers!
-parentals <- subset(controls_df, total_segments > 6) %>% 
-  group_by(cross_sample, cross, sample) %>% 
-  summarise(
-    parental = max_majority_strain == total_segments,
-    #total_segments == max_majority_strain
-  )
-
-parentals <- distinct(parentals)
-
-table(parentals$cross, parentals$parental)
-
-#Group by cross_sample and calculate number of parents for each
-controls_df_number_parents <- controls_df %>% 
-  group_by(cross, cross_sample) %>% 
-  summarise(
-    number_parents = length(unique(majority_strain)),
-    #constellation = paste(majority_strain_locus, sep = ","),
-    max_majority_strain = max(table(majority_strain))
-  )
-
-nrow(subset(controls_df_number_parents, number_parents == 2))
-#305
-nrow(controls_df_number_parents)
-#[1] 864
-
-#Make a reasortant column 
-controls_df_number_parents <- mutate(controls_df_number_parents, reassortant = ifelse(number_parents > 1, yes = 1, no = 0))
-
-cross_stats <- controls_df_number_parents %>% 
-  group_by(cross) %>% 
-  summarise(
-    clones = length(number_parents),
-    reassortants = sum(reassortant)
-    #constellation = paste(majority_strain_locus, sep = ","),
-    #max_majority_strain = max(table(majority_strain))
-  )
-
-#Add proportion reassortant to data frame
-cross_stats <- mutate(cross_stats, prop_reassortant = reassortants / clones)
-
-#Now add cross data
-cross_stats <- left_join(cross_stats, cross_data_runA, by = "cross")
-
-#Plot reasortment proportions
-#First, replicate of standard (using crosess to subset because it's a bit complicated)
-ggplot(subset(cross_stats, cross == "cross2" | cross == "cross4" | cross == "cross3" | cross == "cross5" | cross == "cross11" | cross == "cross13" | cross == "cross17"), aes(x = strainAB, y = prop_reassortant)) + geom_point()
-
-
-#Second by MOI
-ggplot(subset(cross_stats, cross == "cross10" | cross == "cross6" | cross == "cross4"), aes(x = as.factor(moi), y = prop_reassortant)) + geom_point()
-######### Using 7 segments  ##############
-
-
-
-######### No PB1  ##############
-#Now let's generate some numbers!
-
-#Now let's go ahead and drop PB1
-#How many rows?
-nrow(controls_df)
-#6120
-
-nrow(filter(controls_df, locus != "PB1c"))
-#5706
-#Should not affect number of samples/clones
-
-#Execute 
-controls_df <- filter(controls_df, locus != "PB1c")
-
-parentals <- subset(controls_df, total_segments > 6) %>% 
-  group_by(cross_sample, cross, sample) %>% 
-  summarise(
-    parental = max_majority_strain == total_segments,
-    #total_segments == max_majority_strain
-  )
-
-parentals <- distinct(parentals)
-
-table(parentals$cross, parentals$parental)
-
-#Group by cross_sample and calculate number of parents for each
-controls_df_number_parents <- controls_df %>% 
-  group_by(cross, cross_sample) %>% 
-  summarise(
-    number_parents = length(unique(majority_strain)),
-    #constellation = paste(majority_strain_locus, sep = ","),
-    max_majority_strain = max(table(majority_strain))
-  )
-
-nrow(subset(controls_df_number_parents, number_parents == 2))
-#542
-nrow(controls_df_number_parents)
-#[1] 864
-
-#Make a reasortant column 
-controls_df_number_parents <- mutate(controls_df_number_parents, reassortant = ifelse(number_parents > 1, yes = 1, no = 0))
-
-cross_stats <- controls_df_number_parents %>% 
-  group_by(cross) %>% 
-  summarise(
-    clones = length(number_parents),
-    reassortants = sum(reassortant)
-    #constellation = paste(majority_strain_locus, sep = ","),
-    #max_majority_strain = max(table(majority_strain))
-  )
-
-#Add proportion reassortant to data frame
-cross_stats <- mutate(cross_stats, prop_reassortant = reassortants / clones)
-
-#Now add cross data
-cross_stats <- left_join(cross_stats, cross_data_runA, by = "cross")
-
-#Plot reasortment proportions
-#First, replicate of standard (using crosess to subset because it's a bit complicated)
-ggplot(subset(cross_stats, cross == "cross2" | cross == "cross4" | cross == "cross3" | cross == "cross5" | cross == "cross11" | cross == "cross13" | cross == "cross15"), aes(x = strainAB, y = prop_reassortant)) + geom_point()
-
-
-#Second by MOI
-ggplot(subset(cross_stats, cross == "cross2" | cross == "cross10" | cross == "cross6"), aes(x = as.factor(moi), y = prop_reassortant)) + geom_point()
-
-
-######### No PB1  ##############
-
-
-#### 4. Downsampling's effect on unique genotypes, reassortants  ####
-
-#We have reassortment data, now let's generate unique genotype data
-
-#Making a table for the GenAlEx format for population genetics analyses
-
-genotypes_table <- group_by(controls_df, cross_sample, strainAB, locus) %>%
-  summarise(
-    majority_strain = majority_strain,
-  )
-
-#Looking good!
-genotypes_table <- spread(genotypes_table, locus, majority_strain)
-
-#Merge all genotypes into one and make a code for each genotype
-genotypes_table <- unite(genotypes_table, "genotype",  c("HA", "Mg", "NA", "NPd", "NS1d", "PAc", "PB1c", "PB2f"), remove = F)
-
-genotypes_table <- separate(genotypes_table, cross_sample, into = c("cross", "sample"), sep = "_", remove = F)
-
-#Graph by cross first
-ggplot(genotypes_table, aes(x = strainAB, fill = genotype)) + geom_bar() + theme(legend.position = "none")
-
-genotype_counts <- group_by(genotypes_table, cross, strainAB, genotype) %>%
-  summarise(
-    number_plaques = n()
-  )
-
-#Graph Counts per cross
-ggplot(genotype_counts, aes(x = genotype, y = number_plaques, fill = genotype)) + geom_col() + theme(legend.position = "none", axis.text.x = element_blank()) + facet_wrap(~ strainAB, ncol = 1, scales = "free") 
-
-#Now need to count the number of unique genotypes per cross
-genotype_counts_cross <- group_by(genotype_counts, cross, strainAB) %>%
-  summarise(
-    total_genotypes = length(unique(genotype))
-  )
-
-genotypes_df <- right_join(genotype_counts, genotype_counts_cross, by = c("cross", "strainAB"))
-
-#Same graph as above
-ggplot(genotypes_df, aes(x = genotype, y = number_plaques, fill = genotype)) + geom_col() + theme(legend.position = "none", axis.text.x = element_blank()) + facet_wrap(~ strainAB, ncol = 1, scales = "free") 
-
-#Now genotypes per cross
-ggplot(genotype_counts_cross, aes(x = reorder(strainAB, total_genotypes), y = total_genotypes)) + geom_col()
-
-#Old reasortment graph from above
-ggplot(cross_stats, aes(x = reorder(cross, prop_reassortant), y = prop_reassortant)) + geom_col() + geom_hline(yintercept = 0.40, linetype = 2, color = "grey", alpha = 0.75) + geom_hline(yintercept = 0.9921875, linetype = 2, color = "red", alpha = 0.75)
-
-#Now let's merge these two into one data frame to compare
-cross_stats <- right_join(cross_stats, genotype_counts_cross, by = c("cross", "strainAB"))
-
-#Side by side
-ggplot(cross_stats, aes(x = reorder(strainAB, prop_reassortant), y = prop_reassortant)) + geom_col() + geom_hline(yintercept = 0.40, linetype = 2, color = "red", alpha = 0.75)
-#Genotypes per cross
-ggplot(genotype_counts_cross, aes(x = reorder(strainAB, total_genotypes), y = total_genotypes)) + geom_col()
-
-
-#Clearly correlated 
-ggplot(cross_stats, aes(x = prop_reassortant, y = total_genotypes)) + geom_point(aes(colour = strainAB)) + geom_smooth(method = "lm") 
-
-#Quick stats
-reassortment_genotypes_model <- lm(total_genotypes ~ reassortants, cross_stats)
-summary(reassortment_genotypes_model)
-#NS
-#Call:
-#  lm(formula = total_genotypes ~ reassortants, data = cross_stats)
-
-#Residuals:
-#  Min       1Q   Median       3Q      Max 
-#-23.5162  -0.9902   3.1114   5.4161  13.4439 
-
-#Coefficients:
-#  Estimate Std. Error t value Pr(>|t|)   
-#(Intercept)    5.0579     6.2471   0.810  0.44479   
-#reassortants   0.6554     0.1435   4.566  0.00259 **
-#  ---
-#  Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
-
-#Residual standard error: 11.33 on 7 degrees of freedom
-#Multiple R-squared:  0.7486,	Adjusted R-squared:  0.7127 
-#F-statistic: 20.85 on 1 and 7 DF,  p-value: 0.002586
-
-#AFTER SENDING DRAFT Cool, even works with this but need to adjust for number of plaques as in pairwise
-#AFTER SENDING DRAFT - Also did I remove incomplete genotypes? Not reporting above, though
-
-#Now let's do rarefaction analysis, but on real genotypes
-#So I am looking to focus on the genotypes column
-nrow(genotypes_table)
-#864
-genotypes_table_completes <- na.omit(genotypes_table)
-nrow(genotypes_table_completes)
-#259
-
-#Let's start with HK68_PAN99 and treat both crosses as one (there should be three of these)
-hk_pan_genotypes <- as.vector(subset(genotypes_table_completes, strainAB == "HK68_PAN99", select = genotype))
-
-#Number of total genotypes in HK/PAN crosses
-nrow(hk_pan_genotypes)
-#96
-
-nrow(unique(hk_pan_genotypes))
-#40 
-#a little over half are unique
-
-#So now need to sample from these genotypes, like so:  
-sample(hk_pan_genotypes$genotype, 1)
-
-#Need to do this 1000 times and see the effect of sampling
-
-#This loop takes a fixed number of attempts and figures out how many unique genotypes you get
-n <- 1
-simulation_df <- NULL
-set.seed(99)
-for (n in 1:1000) {
-  uniques <- NULL
-  simul_genotypes <- NULL
-  tries <- NULL
-  current_try <- NULL
-  i <- 1
-  while(i < 97) {
-    simul_genotypes <- rbind(simul_genotypes, sample(hk_pan_genotypes$genotype, 1))
-    nrow(simul_genotypes)
-    uniques <- nrow(unique(simul_genotypes))
-    #print(uniques)
-    current_try <- data.frame(attempt = i, unique_genotypes = as.numeric(uniques), trial_number = n)
-    tries <- rbind(tries, current_try)
-    #trial_number <- rep(n, times = nrow(tries))
-    #tries <- cbind(tries, trial_number)
-    i <- i+1
-  }
-  n <- n + 1
-  simulation_df <- rbind(simulation_df, tries)
-}
-
-#Ok, that worked surprisingly well
-
-#Let's add the observed crosses as points manually, to provide context
-#Cross 3 and cross 5 are the ones in question here for HK68_PAN99
-
-genotypes_table_completes %>% filter(strainAB == "HK68_PAN99") %>% group_by(cross) %>%
-  summarise(
-    total_plaques = length(genotype),
-    genotypes = length(unique(genotype)),
-  )
-## A tibble: 2 x 3
-#cross  total_plaques genotypes
-#<chr>          <int>     <int>
-#cross3            66        31
-#cross5            30        19
-
-#So I got 31 unique genotypes / 66 in one attempt and 19/30. Not bad! 
-
-#Let's plot
-ggplot(simulation_df, aes(x = attempt, y = unique_genotypes, colour = trial_number)) + xlab("Number of Plaque Isolates with Complete Genotypes") + ylab("Number of Total Unique Genotypes") + geom_point(aes(alpha=0.3)) + geom_point(aes(x=31, y=19), colour="red", size = 3.5) + geom_point(aes(x=66, y=31), colour="red", size = 3.5) + theme(legend.position = "none")
-
-simulation_df %>% filter(attempt == 96) %>% group_by(attempt) %>% 
-  summarise(
-    min_unique = min(unique_genotypes),
-    max_unique = max(unique_genotypes),
-    mean_unique = mean(unique_genotypes),
-    sd_unique = sd(unique_genotypes),
-    n_trials = n(),
-  )
-
-#  attempt min_unique max_unique mean_unique sd_unique n_trials
-#   <dbl>      <dbl>      <dbl>       <dbl>     <dbl>    <int>
-#      96         22         38        29.4      2.36     1000
-
-#So this means I never hit my full 40 genotypes in and only 1/1000 do I come close (38)
-#One of the crosses actually is pretty good, coming in at the average of 96 samples, while sampling only 66
-
-#How does this look different with another strain combo:
-#Lets move on to CA_PAN99 and treat both crosses as one (there should be three of these)
-ca_pan_genotypes <- as.vector(subset(genotypes_table_completes, strainAB == "CA09_PAN99", select = genotype))
-
-#Number of total genotypes in CA/PAN crosses
-nrow(ca_pan_genotypes)
-#132
-
-nrow(unique(ca_pan_genotypes))
-#21 
-#surprisingly low!
-
-#So now need to sample from these genotypes, like so:  
-sample(ca_pan_genotypes$genotype, 1)
-
-#Need to do this 1000 times and see the effect of sampling
-
-#This loop takes a fixed number of attempts and figures out how many unique genotypes you get
-n <- 1
-simulation_df <- NULL
-set.seed(09)
-for (n in 1:1000) {
-  uniques <- NULL
-  simul_genotypes <- NULL
-  tries <- NULL
-  current_try <- NULL
-  i <- 1
-  while(i < 97) {
-    simul_genotypes <- rbind(simul_genotypes, sample(ca_pan_genotypes$genotype, 1))
-    nrow(simul_genotypes)
-    uniques <- nrow(unique(simul_genotypes))
-    #print(uniques)
-    current_try <- data.frame(attempt = i, unique_genotypes = as.numeric(uniques), trial_number = n)
-    tries <- rbind(tries, current_try)
-    #trial_number <- rep(n, times = nrow(tries))
-    #tries <- cbind(tries, trial_number)
-    i <- i+1
-  }
-  n <- n + 1
-  simulation_df <- rbind(simulation_df, tries)
-}
-
-#Ok, that worked surprisingly well
-
-#Let's add the observed crosses as points manually, to provide context
-#Cross 11, 13, and 17 are the ones in question here for CA09_PAN99
-
-genotypes_table_completes %>% filter(strainAB == "CA09_PAN99") %>% group_by(cross) %>%
-  summarise(
-    total_plaques = length(genotype),
-    genotypes = length(unique(genotype)),
-  )
-## A tibble: 3 x 3
-#cross   total_plaques genotypes
-#<chr>           <int>     <int>
-#cross11            11         5
-#cross13            47         6
-#cross17            74        11
-#So I got 11 unique genotypes / 74 in one attempt. Pretty fixed. And looks like reassortment is not important, it's the combinations
-
-#Let's plot
-ggplot(simulation_df, aes(x = attempt, y = unique_genotypes, colour = trial_number)) + xlab("Number of Plaque Isolates with Complete Genotypes") + ylab("Number of Total Unique Genotypes") + geom_point(aes(alpha=0.3)) + geom_point(aes(x=11, y=5), colour="red", size = 3.5) + geom_point(aes(x=47, y=6), colour="red", size = 3.5) + geom_point(aes(x=74, y=11), colour="red", size = 3.5) + theme(legend.position = "none")
-
-simulation_df %>% filter(attempt == 96) %>% group_by(attempt) %>% 
-  summarise(
-    min_unique = min(unique_genotypes),
-    max_unique = max(unique_genotypes),
-    mean_unique = mean(unique_genotypes),
-    sd_unique = sd(unique_genotypes),
-    n_trials = n(),
-  )
-
-#  attempt min_unique max_unique mean_unique sd_unique n_trials
-#<dbl>      <dbl>      <dbl>       <dbl>     <dbl>    <int>
-#   96          5         14        9.87      1.49     1000
-
-#So this means I never hit my full 21 genotypes, but I get up there a few times
-#Most crosses look right in the middle of the curve
-
-#So compared to HK_PAN, need way fewer plaques because the genotype space explored by CA_PAN is so much smaller
-#That makes a lot of sense
-
-#Now let's look at the final strain combo:
-#Lets move on to CA_HK and treat both crosses as one
-#Need to be careful I don't do the intemediate or low MOI crosses, so need cross2 and cross 4
-ca_hk_genotypes <- as.vector(subset(genotypes_table_completes, cross == "cross2" | cross == "cross4" , select = genotype))
-
-#Number of total genotypes in CA/HK crosses
-nrow(ca_hk_genotypes)
-#13
-
-nrow(unique(ca_hk_genotypes))
-#2 
-#Right because most plaques are wiped out by PB1, may have to re-do with PB1
-
-#So now need to sample from these genotypes, like so:  
-sample(ca_hk_genotypes$genotype, 1)
-
-#Need to do this 1000 times and see the effect of sampling
-
-#This loop takes a fixed number of attempts and figures out how many unique genotypes you get
-n <- 1
-simulation_df <- NULL
-set.seed(68)
-for (n in 1:1000) {
-  uniques <- NULL
-  simul_genotypes <- NULL
-  tries <- NULL
-  current_try <- NULL
-  i <- 1
-  while(i < 97) {
-    simul_genotypes <- rbind(simul_genotypes, sample(ca_hk_genotypes$genotype, 1))
-    nrow(simul_genotypes)
-    uniques <- nrow(unique(simul_genotypes))
-    #print(uniques)
-    current_try <- data.frame(attempt = i, unique_genotypes = as.numeric(uniques), trial_number = n)
-    tries <- rbind(tries, current_try)
-    #trial_number <- rep(n, times = nrow(tries))
-    #tries <- cbind(tries, trial_number)
-    i <- i+1
-  }
-  n <- n + 1
-  simulation_df <- rbind(simulation_df, tries)
-}
-
-#Ok, that worked surprisingly well
-
-#Let's add the observed crosses as points manually, to provide context
-#Cross 2, and 4 are the ones in question here for CA09_HK68
-
-genotypes_table_completes %>% filter(strainAB == "CA09_HK68") %>% group_by(cross) %>%
-  summarise(
-    total_plaques = length(genotype),
-    genotypes = length(unique(genotype)),
-  )
-##x# A tibble: 4 x 3
-#cross   total_plaques genotypes
-#<chr>           <int>     <int>
-#cross10            13         6
-#cross2             12         2
-#cross4              1         1
-#cross6              5         3
-#Not very meaningful given the low sample size 
-
-#Let's plot
-ggplot(simulation_df, aes(x = attempt, y = unique_genotypes, colour = trial_number)) + geom_point(aes(alpha=0.3)) + geom_point(aes(x=12, y=2), colour="red", size = 3.5) + theme(legend.position = "none")
-
-simulation_df %>% filter(attempt == 96) %>% group_by(attempt) %>% 
-  summarise(
-    min_unique = min(unique_genotypes),
-    max_unique = max(unique_genotypes),
-    mean_unique = mean(unique_genotypes),
-    sd_unique = sd(unique_genotypes),
-    n_trials = n(),
-  )
-
-#   attempt min_unique max_unique mean_unique sd_unique n_trials
-#<dbl>      <dbl>      <dbl>       <dbl>     <dbl>    <int>
-# 96          2          2           2         0     1000
-
-#Again, not very meaningful

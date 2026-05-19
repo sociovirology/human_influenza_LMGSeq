@@ -1,9 +1,12 @@
-#************* Pairwise coinfection analyses *************#
+################ Pairwise coinfection analyses ################
 #### 1. Importing Data and Initial Preparation of Data Frame
 #### 2. Antigenic Segment Processing
-#### 3. Coinfection Supernatant Titers
-#### 4. Population Genetic Statistics
-#### 5. Testing Strain Specificity
+#### 3. Quality measures of strain assignments and calculation of reassortment frequencies
+#### 4. Calculate Segment Representation, with all data
+#### 5. Linkage of Segments, Heterologous/Homologous Pairing
+#### 6. Coinfection Supernatant Titer
+#### 7. Population Genetics: focus on unique genotypes and PI
+#### 8. Rarefaction Analyses to determine sample sizes necessary to capture all reassortan
 
 # Pairwise coinfection analyses Script for Influenza LMGSeq
 # Script: pairwise_coinfections.R
@@ -16,8 +19,6 @@
 #Influenza A virus reassortment is strain dependent
 #Kishana Y. Taylor | Ilechukwu Agu  | Ivy José | Sari Mäntynen | A.J. Campbell | Courtney Mattson |  Tsui-wen Chou | Bin Zhou | David Gresham | Elodie Ghedin |  Samuel L. Díaz Muñoz
 
-
-#AFTER SENDING DRAFT - Search for this below
 
 #Load required libraries
 library(dplyr)
@@ -315,7 +316,7 @@ filter(two_strain_database17_98_locus, locus == "NA3a" | locus == "NA1c") %>%
 #Now rename all the NA loci
 two_strain_database17_98_locus$locus[grep("NA", two_strain_database17_98_locus$locus)] <- "NA"
 #DONE!!!!! 
-##### End NA processing
+# End NA processing
 
 ## 2.2 HA Segment  ----
 #Lets check how many samples have any HA segments
@@ -486,9 +487,9 @@ filter(two_strain_database17_98_locus, locus == "HA3a" | locus == "HA1b") %>%
 
 #Now rename all the HA loci
 two_strain_database17_98_locus$locus[grep("HA", two_strain_database17_98_locus$locus)] <- "HA"
-##### End HA processing
+# End HA processing
 
-# 3. Quality measures of strain assignments and calculation of reassortment frequencies
+# 3. Quality measures of strain assignments and calculation of reassortment frequencies ----
 
 #Checking how good the assignments are
 mean(two_strain_database17_98_locus$proportion_assigned)
@@ -759,13 +760,12 @@ sd(subset(cross_stats, strainA == "CA09" | strainB == "CA09", select = prop_reas
 
 #Alternative to heatmap, potential new Figure 3A
 #This is just a spreadsheet that lists reassortment frequencies for each strain (note they are "double counted")
-cross_stats_manual <- read.csv("cross_stats_manual.csv")
+cross_stats_manual <- read.csv("data/cross_stats_manual.csv")
 #View(cross_stats_manual)
 ggplot(cross_stats_manual, aes(x = strain, y = prop_reassortant)) + geom_point()
 #This is Figure 4A, and nicely shows how some strains tend to produce higher reassortment frequencies (see SI86 verus CA09 for an extreme visual example) Stats test follows below
 ggplot(cross_stats_manual, aes(x = strain, y = prop_reassortant)) + geom_boxplot() + geom_point(aes(colour = as.factor(prop_reassortant), size = 8)) + scale_color_brewer(palette = 'Set3') + xlab("Strain") + ylab("Proportion of Reassortant Plaque Isolates") + theme(legend.position = "none") + theme_tufte() + theme(text = element_text(size = 20,  family="Helvetica")) + theme(axis.text.x = element_text(size = 12)) + theme(legend.position = "none") + theme(panel.grid.major.y = element_line(color = "lightgray",size = 0.5))
 
-#START HERE NOV 16, 2022
 
 #Let's do a quick proportion test on the reassortment data
 
@@ -845,7 +845,6 @@ summary(model5)
 #Residual standard error: 0.1958 on 5 degrees of freedom
 #Multiple R-squared:  0.9403,	Adjusted R-squared:  0.8806 
 #F-statistic: 15.75 on 5 and 5 DF,  p-value: 0.004435
-
 
 #ANOVA Table
 #Bring plots together
@@ -1105,8 +1104,6 @@ ggplot(locus_strain, aes(x = locus, y = total_samples, fill = majority_strain)) 
 
 #But I don't think I have equal samples, per cross, argh. Need to adjust, per sample size 
 
-
-
 get_CI <- function(sample_size) {
   half_integer <- round(sample_size/2, digits = 0)
   ci_low <- binom.test(c(half_integer, half_integer), p = 0.5)[4]$conf.int[1]
@@ -1131,7 +1128,7 @@ get_high_CI <- function(sample_size) {
   return(ci_high)
 }
 
-#### All Data ####
+# 4. Calculate Segment Representation, with all data ----
 #Need to add the proportion we see in the plot, but I have questions about how I originally made locus_strain (Line 399), so going with this
 binomial_segment <- group_by(controls_df, cross, locus, majority_strain) %>%
   summarise(count = n()) %>% 
@@ -1221,11 +1218,11 @@ segment_assortment_reasortment <- right_join(binomial_segment %>% group_by(cross
 #No relationship... Would have to be audacious to draw a straight line through that... (but R will do it!)
 # This should be a Supplementary figure
 ggplot(segment_assortment_reasortment, aes(x = prop_reassortant, y = number_inside_ci)) + geom_point(aes(colour = strainAB), size = 6)
+# END All Data Segment representation
 
-#### END All Data Segment representation ####
 
-
-#### Reassortants only ####
+## 4.1. Calculate Segment Representation, but with reassortants only ----
+#### Reassortants only
 #Again this is Figure 6, but with reassortants only
 ggplot(locus_strain_reassortants_only, aes(x = factor(locus, level = c('PB2f', 'PB1c', 'PAc', 'HA', 'NPd', 'NA', 'Mg', 'NS1d')), y = total_samples, fill = majority_strain)) + geom_col(position = "fill") + facet_grid(strainA~strainB) + xlab("Segment") + ylab("Proportion of Plaque Isolates Assigned to Each Strain") + theme(axis.text.x = element_text(angle=90)) + geom_hline(yintercept = 0.50, alpha = 0.75, linetype = 2)
 
@@ -1262,8 +1259,6 @@ binom.test(c(48, 48), p = 0.5)
 #Redraw with these limits
 ggplot(locus_strain_reassortants_only, aes(x = locus, y = total_samples, fill = majority_strain)) + geom_col(position = "fill") + facet_grid(strainA~strainB) + geom_hline(yintercept = 0.50, alpha = 0.75, linetype = 2) + geom_hline(yintercept = c(0.396, 0.604), alpha = 0.75, linetype = 2, color = "grey")
 #But I don't think I have equal samples, per cross, argh. Need to adjust, per sample size 
-
-
 
 get_CI <- function(sample_size) {
   half_integer <- round(sample_size/2, digits = 0)
@@ -1376,11 +1371,10 @@ segment_assortment_reasortment_only <- right_join(binomial_segment_reassortants_
 #No relationship, either...
 # This should be a Supplementary figure
 ggplot(segment_assortment_reasortment_only, aes(x = prop_reassortant, y = number_inside_ci)) + geom_point(aes(colour = strainAB))
+# END Reassortants only
 
-#### END Reassortants only ####
 
-
-#### 2. Linkage of Segments ####
+# 5. Linkage of Segments, Heterologous/Homologous Pairings ####
 #Then we go to look at linkage disequilibrium 
 
 controls_df_full <- filter(controls_df, total_segments == 8)
@@ -1582,7 +1576,6 @@ ggplot(genotypes_table_test, aes(x = HA_Mg)) + geom_bar() + facet_wrap(~ cross, 
 ggplot(genotypes_table_test, aes(x = HA_Mg)) + geom_bar(aes(y = ..prop.., group = 1)) + facet_wrap(~ cross, scales = "free_x")
 #Much easier to see the differences 
 
-#NEXT STEPS: April 4, 2022
 #Now from here need to:
 # 1. Make all the other pairings
 # 2. Potentially summarize the pairings into a new tidy data frame
@@ -1894,8 +1887,7 @@ summary(reassortment_pairwise_model)
 #Multiple R-squared:  0.5601,	Adjusted R-squared:  0.5052 
 #F-statistic: 10.19 on 1 and 8 DF,  p-value: 0.01277
 
-
-#### 3. Coinfection Supernatant Titers ####
+# 6. Coinfection Supernatant Titers ####
 #Import data on experimental coinfection supernatant titers file
 supernatant_titers <- read.csv("data/supernatant_titers.csv")
 
@@ -1916,7 +1908,7 @@ ggplot(supernatant_titers, aes(x = reorder(cross, titer), y = titer)) + geom_col
 #Heatmap
 ggplot(supernatant_titers, aes(x = strainA, y = strainB, fill= titer)) + geom_tile() + geom_text(aes(label = round(titer, 4))) + scale_fill_gradient(low = "white", high = "red") 
 
-#### 4. Population Genetics ####
+# 7. Population Genetics: focus on unique genotypes and PID ####
 #Making a table for the GenAlEx format for population genetics analyses
 
 genotypes_table <- group_by(controls_df, cross_sample, strainAB, locus) %>%
@@ -1934,8 +1926,6 @@ genotypes_table <- separate(genotypes_table, cross_sample, into = c("cross", "sa
 
 #Remove NA's
 genotypes_table <- na.omit(genotypes_table)
-
-######################## These Seeem Redundant now ########################
 
 #Graph by cross first
 ggplot(genotypes_table, aes(x = strainAB, fill = genotype)) + geom_bar() + theme(legend.position = "none")
@@ -2062,7 +2052,6 @@ summary(pairwise_heterologous_mean_frequency_pid)
 #Also uncorrelated!
 
 
-
 #Can we come up with a risk assesement measure? Based on three criteria (reassortment, genotypes, productivity)
 
 #Let's bring in supernatant titers into the cross_stats data frame
@@ -2086,6 +2075,7 @@ p_values_free_reasortment <- sapply(cross_stats$reassortants, function(x) binom.
 #Incorporate into cross stats table 
 cross_stats <- data.frame(cross_stats, p_values_free_reasortment)
 
+# 8. Rarefaction Analyses to determine sample sizes necessary to capture all reassortants ####
 #Now let's try to crack rarefaction analysis
 
 #Packages are a hassle so let's come up with a function:

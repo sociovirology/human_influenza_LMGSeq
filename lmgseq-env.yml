@@ -1,4 +1,4 @@
-name: gbbseq
+name: lmgseq
 channels:
   - conda-forge
   - bioconda

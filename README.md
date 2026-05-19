@@ -8,9 +8,9 @@ Kishana Y. Taylor | Ilechukwu Agu  | Ivy José | Sari Mäntynen | A.J. Campbell 
 If you are reading or using this, let us know how these data were useful for you. If you use these data and code, please cite the repository or the paper. Always open to collaborate! Please contact us!
 
 ### Quick Start
-1. Make sure packages are installed (see #2 below) or use gbbseq-env.yml to set up Anaconda environment:
+1. `git clone https://github.com/sociovirology/human_influenza_LMGSeq.git`
+2. Make sure packages are installed (see #2 below) or use lmgseq-env.yml to set up Anaconda environment:
    `conda env create -f lmgseq-env.yml && conda activate lmgseq`
-2. `git clone https://github.com/sociovirology/human_influenza_LMGSeq.git`
 3. `chmod +x demultiplexing.sh amplicon_curation_strain_assignment.sh`
 4. `./demultiplexing.sh runA "shared/cross_list_runA_pairwise.txt" pairwise_infections` (pairwise)
 5. `./demultiplexing.sh runA "shared/cross_list_runA_control.txt" control_infections` (controls)

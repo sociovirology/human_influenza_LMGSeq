@@ -39,13 +39,11 @@ mkdir -p $data_dir
 if [ ! -f "data/${1}_R1.fastq" ] && [ ! -f "data/${1}_R1.fastq.gz" ]; then
     wget ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR218/043/SRR21880043/SRR21880043_1.fastq.gz -O data/runA_R1.fastq.gz
     wget ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR218/043/SRR21880043/SRR21880043_2.fastq.gz -O data/runA_R2.fastq.gz
+    #Unzip files
     gunzip data/runA_*.fastq.gz
 else
     echo "FASTQ files already present, skipping download"
 fi
-
-#Unzip files
-gunzip data/runA_*.fastq.gz
 
 #This script conducts demultiplexing for one run, which is indicated in the first command-line argument: runA,
 # the second command line argument includes a cross list (in this case detailing the experimental coinfections),

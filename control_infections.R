@@ -162,10 +162,12 @@ locus_by_cross <- two_strain_database17_98_locus %>% group_by(strainAB, locus) %
   )
 
 #NA's
-View(locus_by_cross[grep("NA", locus_by_cross$locus), ])
+#View command commented for scripting session, can use for understanding / troubleshooting
+#View(locus_by_cross[grep("NA", locus_by_cross$locus), ])
 
 #HA's
-View(locus_by_cross[grep("HA", locus_by_cross$locus), ])
+#View command commented for scripting session, can use for understanding / troubleshooting
+#View(locus_by_cross[grep("HA", locus_by_cross$locus), ])
 
 ## 2.1 NA Segment  ----
 #Lets check how many samples have any NA segments

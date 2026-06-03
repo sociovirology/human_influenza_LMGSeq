@@ -153,7 +153,7 @@ pwd
   do
   wc -l $b6_file | awk 'BEGIN { OFS = "\t"; ORS = "\t" } {if($1!="0") print $2, $1}'
   cut -f 2 ${b6_file%} | cut -d , -f 1 | sort | uniq -c | sort -nr | head -n 1 | awk 'BEGIN { OFS = "\t"; ORS = "\n"} {print $1, $2 }'
-  done > $BASEDIR/$INTERMED_DIR/outputs/${cross}_pairwise_two_strain_database17_98_locus.txt
+  done > $BASEDIR/outputs/$INTERMED_DIR/${cross}_pairwise_two_strain_database17_98_locus.txt
 
 #End the cross loop
 done

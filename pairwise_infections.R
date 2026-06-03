@@ -35,7 +35,7 @@ library(scales)
 # 1. Importing Data and Initial Preparation of Data Frame ----
 
 #List output file names
-file_names <- list.files("outputs/pairwise_infections", "*_strain_database17_98_locus.txt", full.names = T)
+file_names <- list.files("outputs/runA_pairwise_infections", "*_strain_database17_98_locus.txt", full.names = T)
 
 #Make a dataframe by recursively reading each output file in the list
 two_strain_database17_98_locus <- NULL

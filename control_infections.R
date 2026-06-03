@@ -40,7 +40,7 @@ library(ggthemes)
 #### 1. Data Sources and Preparing Data ####
 
 #Read files
-file_names <- list.files("outputs/control_infections", "*_strain_database17_98_locus.txt", full.names = T)
+file_names <- list.files("outputs/runA_control_infections", "*_strain_database17_98_locus.txt", full.names = T)
 #file_names <- file_names[c(3,4)]
 
 #Going to add 
@@ -105,15 +105,15 @@ two_strain_database17_98_locus %>% group_by(cross) %>%
 # A tibble: 9 x 2
 #cross   total_cross_reads
 #<chr>               <int>
-#cross10            865786
-#cross11            664352
-#cross13            740611
-#cross17           1199638
-#cross2            1152974
-#cross3            1197359
-#cross4             859464
-#cross5            1176569
-#cross6             583357
+#1 cross10            867254
+#2 cross11            664562
+#3 cross13            743303
+#4 cross17           1201675
+#5 cross2            1154666
+#6 cross3            1197359
+#7 cross4             863941
+#8 cross5            1176569
+#9 cross6             584433
 
 #Summarise average number of reads per sample in each cross 
 reads_sample <- two_strain_database17_98_locus %>% group_by(cross_sample, cross) %>%
@@ -123,7 +123,7 @@ reads_sample <- two_strain_database17_98_locus %>% group_by(cross_sample, cross)
 
 summary(reads_sample$total_cross_reads)
 #Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
-#30    5205    9378    9769   13690   24135
+#30    5221    9406    9784   13700   24135 
 
 #Summarise number of reads per locus 
 reads_locus <- two_strain_database17_98_locus %>% group_by(locus) %>%
@@ -134,10 +134,10 @@ reads_locus <- two_strain_database17_98_locus %>% group_by(locus) %>%
 
 summary(reads_locus$average_locus_reads)
 #Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
-#14.63  121.79  686.32 1261.37 2575.73 3323.07
+# 14.63   35.40  347.58 1017.45 2121.94 3335.40
 
 mean(reads_locus$average_locus_reads)
-#1261.366
+#1017.454
 sd(reads_locus$average_locus_reads)
 #1353.948
 

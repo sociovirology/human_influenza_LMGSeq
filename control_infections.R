@@ -35,6 +35,7 @@ library(ggplot2)
 library(tidyr)
 library(reshape2)
 library(readr)
+library(ggthemes)
 
 #### 1. Data Sources and Preparing Data ####
 
@@ -288,12 +289,13 @@ nrow(remove_na)
 #331 goal!!!
 
 #Now let's do a quick sanity check, visually with view
-View(
-  na_two %>% group_by(cross_sample, locus) %>%
-    summarise(
-      majority_assigned_reads = sum(majority_assigned_reads),
-    ) %>% pivot_wider(names_from = locus, values_from =  majority_assigned_reads) %>% left_join(remove_na)
-)
+#View command commented for scripting session, can use for understanding / troubleshooting
+#View(
+#  na_two %>% group_by(cross_sample, locus) %>%
+#    summarise(
+#      majority_assigned_reads = sum(majority_assigned_reads),
+#    ) %>% pivot_wider(names_from = locus, values_from =  majority_assigned_reads) %>% left_join(remove_na)
+#)
 #Gosh I love the tidyverse!
 #Looks good enough especially at the extremes
 
@@ -460,12 +462,13 @@ nrow(remove_ha)
 #52 goal!!!
 
 #Now let's do a quick sanity check, visually with view
-View(
-  ha_two %>% group_by(cross_sample, locus) %>%
-    summarise(
-      majority_assigned_reads = sum(majority_assigned_reads),
-    ) %>% pivot_wider(names_from = locus, values_from =  majority_assigned_reads) %>% left_join(remove_ha)
-)
+#View command commented for scripting session, can use for understanding / troubleshooting
+#View(
+#  ha_two %>% group_by(cross_sample, locus) %>%
+#    summarise(
+#      majority_assigned_reads = sum(majority_assigned_reads),
+#    ) %>% pivot_wider(names_from = locus, values_from =  majority_assigned_reads) %>% left_join(remove_ha)
+#)
 #Gosh I love the tidyverse!
 #Looks good enough especially at the extremes
 

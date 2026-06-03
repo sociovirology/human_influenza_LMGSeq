@@ -16,7 +16,7 @@ If you are reading or using this, let us know how these data were useful for you
 5. `./demultiplexing.sh runA "shared/cross_list_runA_control.txt" control_infections` (controls)
 6. `./amplicon_curation_strain_assignment.sh runA "shared/cross_list_runA_pairwise.txt" pairwise_infections`
 7. `./amplicon_curation_strain_assignment.sh runA "shared/cross_list_runA_control.txt" control_infections`
-8. `Rscript control_infections_two_strain_cross2.R` (or load interactively in R)
+8. `Rscript control_infections.R` (or load interactively in R)
 9. `Rscript pairwise_infections.R` (or load interactively in R)
 
 ### CONTENTS

@@ -11,9 +11,6 @@
 #Kishana Y. Taylor | Ilechukwu Agu  | Ivy José | Sari Mäntynen | A.J. Campbell | Courtney Mattson |  Tsui-wen Chou | Bin Zhou | David Gresham | Elodie Ghedin |  Samuel L. Díaz Muñoz
 
 
-#Enable error handling (strict)
-set -euo pipefail
-
 if [ "$#" -ne 3 ]; then
     echo "You must enter exactly 3 command line arguments: run, cross, and experiment"
     echo "run has format 'runA'"

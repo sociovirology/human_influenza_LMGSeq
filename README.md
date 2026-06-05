@@ -19,6 +19,15 @@ If you are reading or using this, let us know how these data were useful for you
 8. `Rscript control_infections.R` (or load interactively in R)
 9. `Rscript pairwise_infections.R` (or load interactively in R)
 
+### Super Quick Start
+For a quicker start, you can jump some steps because the flat text files analyzed by R are included in the repository in `outputs` folder:
+1. `git clone https://github.com/sociovirology/human_influenza_LMGSeq.git`
+2. Make sure packages are installed (see #2 below) or use lmgseq-env.yml to set up Anaconda environment:
+   `conda env create -f lmgseq-env.yml && conda activate lmgseq`
+3. `Rscript control_infections.R` (or load interactively in R)
+4. `Rscript pairwise_infections.R` (or load interactively in R)
+
+
 ### CONTENTS
 1. Project Description
 2. Packages and software used to test code
@@ -43,6 +52,7 @@ This code was tested using the following software packages:
 Anaconda environment file is available in lmgseq-env.yml
 
 **Note on usearch:** usearch requires a free registration at https://www.drive5.com/usearch/download.html to obtain the binary. Place the `usearch` binary in your PATH before running. The conda environment file installs a compatible version if available via bioconda.
+UPDATE: usearch is now open source! https://www.drive5.com/usearch/
 
 ### 3. Data
 Data consists of sequencing output from the illumina MiSeq platform, sample information, reference database, exprimental coinfection titers, and sample barcodes

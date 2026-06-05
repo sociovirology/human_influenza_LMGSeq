@@ -80,6 +80,6 @@ Below are descriptions of the code files used to generate the tables, figures, a
 
 2) amplicon_curation_strain_assignment.sh: Shell script that merges paired reads with PEAR, aligns merged amplicons to a cross-specific reference database with usearch, filters non-target loci, and generates a flat text summary file used in downstream R analyses.
 
-3) control_infections_two_strain_cross2.R: R script that analyzes reassortment in control experimental coinfections (biological replicates and MOI series) to validate the LMGSeq approach.
+3) control_infections.R: R script that analyzes reassortment in control experimental coinfections (biological replicates and MOI series) to validate the LMGSeq approach.
 
 4) pairwise_infections.R: R script that analyzes reassortment in pairwise experimental coinfections among 5 human influenza A virus strains.
